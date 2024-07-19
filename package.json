@@ -1,0 +1,32 @@
+{
+  "private": true,
+  "name": "@killthebuddha/arcangel",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run build:watch\" \"nodemon build/arcangel.js\"",
+    "start": "node build/arcangel.js",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "types": "tsc --noEmit",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "util:merge": "node build/merge-training.js",
+    "check": "npm run lint && npm run format && npm run types && npm run build && npm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.10",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.53.0",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "jimp": "^0.22.12",
+    "openai": "^4.52.7",
+    "zod": "^3.23.8"
+  }
+}
