@@ -1,34 +1,26 @@
-import Jimp from "jimp";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env["OPENAI_API_KEY"], // This is the default and can be omitted
-});
+import { getRandomTask } from "./getRandomTask.js";
+import { rotate } from "./operations/rotate.js";
+import { readArc } from "./readArc.js";
+import { createGridImage } from "./createGridImage.js";
 
 const main = async () => {
-  const img = await Jimp.read("data/grid.png");
-  const dataUrl = await img.getBase64Async(Jimp.MIME_PNG);
-  console.log(dataUrl);
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: "Please ignore the white sections of the image. Please focus on the black rectangular section. Please describe the black rectangular section.",
-          },
-          {
-            type: "image_url",
-            image_url: { url: dataUrl },
-          },
-        ],
-      },
-    ],
-  });
-
-  console.log(JSON.stringify(response, null, 2));
+  const arc = await readArc();
+  const randomTask = getRandomTask({ arc });
+  const grid = randomTask.task.test[0].input;
+  const rotated90 = rotate({ grid, rotation: { degrees: 90 } });
+  const rotated180 = rotate({ grid, rotation: { degrees: 180 } });
+  const rotated270 = rotate({ grid, rotation: { degrees: 270 } });
+  const rotatedNeg270 = rotate({ grid, rotation: { degrees: -270 } });
+  await Promise.all([
+    createGridImage({ grid, writePath: "data/images/g.png" }),
+    createGridImage({ grid: rotated90, writePath: "data/images/g90.png" }),
+    createGridImage({ grid: rotated180, writePath: "data/images/g180.png" }),
+    createGridImage({ grid: rotated270, writePath: "data/images/g270.png" }),
+    createGridImage({
+      grid: rotatedNeg270,
+      writePath: "data/images/gNeg270.png",
+    }),
+  ]);
 };
 
 main();

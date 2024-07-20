@@ -1,34 +1,45 @@
 import * as Arc from "./Arc.js";
 import Jimp from "jimp";
 
-const COLORS = [
-  [0, 0, 0],
-  [30, 147, 255],
-  [249, 60, 49],
-  [79, 204, 48],
-  [255, 220, 0],
-  [153, 153, 153],
-  [229, 58, 163],
-  [255, 133, 27],
-  [0, 212, 255],
-  [146, 18, 49],
-];
-
-export const createGridImage = (grid: Arc.Grid) => {
+export const createGridImage = async (args: {
+  grid: Arc.Grid;
+  writePath: string;
+}) => {
   const image = new Jimp(512, 512, "white");
 
   const width = 15;
   const height = 15;
 
-  for (let i = 0; i < grid.length; i++) {
-    for (let j = 0; j < grid[0].length; j++) {
-      const colorIndex = grid[i][j];
+  for (let i = 0; i < args.grid.length; i++) {
+    for (let j = 0; j < args.grid[0].length; j++) {
+      const colorIndex = args.grid[i][j];
 
-      if (colorIndex < 0 || colorIndex >= COLORS.length) {
-        throw new Error(`Invalid color index: ${colorIndex}`);
-      }
-
-      const colorRgb = COLORS[colorIndex];
+      const colorRgb = (() => {
+        switch (colorIndex) {
+          case 0:
+            return [0, 0, 0];
+          case 1:
+            return [30, 147, 255];
+          case 2:
+            return [249, 60, 49];
+          case 3:
+            return [79, 204, 48];
+          case 4:
+            return [255, 220, 0];
+          case 5:
+            return [153, 153, 153];
+          case 6:
+            return [229, 58, 163];
+          case 7:
+            return [255, 133, 27];
+          case 8:
+            return [0, 212, 255];
+          case 9:
+            return [146, 18, 49];
+          default:
+            throw new Error(`Invalid color index found: ${colorIndex}`);
+        }
+      })();
 
       image.scan(j * width, i * height, width, height, (x, y, idx) => {
         image.bitmap.data[idx + 0] = colorRgb[0];
@@ -39,5 +50,13 @@ export const createGridImage = (grid: Arc.Grid) => {
     }
   }
 
-  return image;
+  const dataUrl = await image.getBase64Async(Jimp.MIME_PNG);
+
+  await image.writeAsync(args.writePath);
+
+  return {
+    writtenTo: args.writePath,
+    image,
+    dataUrl,
+  };
 };
