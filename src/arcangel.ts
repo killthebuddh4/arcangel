@@ -1,26 +1,56 @@
 import { getRandomTask } from "./getRandomTask.js";
-import { rotate } from "./operations/rotate.js";
 import { readArc } from "./readArc.js";
-import { createGridImage } from "./createGridImage.js";
+import { getRotated } from "./field/getRotated.js";
+import { getFromGrid } from "./field/getFromGrid.js";
+import { getImage } from "./field/getImage.js";
+import { genXDimension } from "./field/genXDimension.js";
+import { genYDimension } from "./field/genYDimension.js";
 
 const main = async () => {
   const arc = await readArc();
   const randomTask = getRandomTask({ arc });
   const grid = randomTask.task.test[0].input;
-  const rotated90 = rotate({ grid, rotation: { degrees: 90 } });
-  const rotated180 = rotate({ grid, rotation: { degrees: 180 } });
-  const rotated270 = rotate({ grid, rotation: { degrees: 270 } });
-  const rotatedNeg270 = rotate({ grid, rotation: { degrees: -270 } });
-  await Promise.all([
-    createGridImage({ grid, writePath: "data/images/g.png" }),
-    createGridImage({ grid: rotated90, writePath: "data/images/g90.png" }),
-    createGridImage({ grid: rotated180, writePath: "data/images/g180.png" }),
-    createGridImage({ grid: rotated270, writePath: "data/images/g270.png" }),
-    createGridImage({
-      grid: rotatedNeg270,
-      writePath: "data/images/gNeg270.png",
-    }),
-  ]);
+  const field = getFromGrid({ grid });
+
+  const fieldImage = await getImage({
+    field,
+    writePath: "data/images/field.png",
+  });
+
+  const xDimension = await genXDimension({
+    fieldDataUrl: fieldImage.dataUrl,
+  });
+
+  console.log("FIELD -----------------------\n\n");
+
+  console.log(xDimension.choices[0].message.content);
+
+  const yDimension = await genYDimension({
+    fieldDataUrl: fieldImage.dataUrl,
+  });
+
+  console.log(yDimension.choices[0].message.content);
+
+  const rotated90 = getRotated({ field, degrees: 90 });
+
+  const rotated90Image = await getImage({
+    field: rotated90,
+    writePath: "data/images/rotated90.png",
+  });
+
+  const xDimensionRotated90 = await genXDimension({
+    fieldDataUrl: rotated90Image.dataUrl,
+  });
+
+  console.log("\n\nROTATED -----------------------\n\n");
+
+  console.log(xDimensionRotated90.choices[0].message.content);
+
+  const yDimensionRotated90 = await genYDimension({
+    fieldDataUrl: rotated90Image.dataUrl,
+  });
+
+  console.log(yDimensionRotated90.choices[0].message.content);
 };
 
 main();

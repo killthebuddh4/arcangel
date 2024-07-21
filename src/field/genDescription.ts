@@ -4,7 +4,7 @@ const openai = new OpenAI({
   apiKey: process.env["OPENAI_API_KEY"], // This is the default and can be omitted
 });
 
-export const getGridDescription = async (args: { gridDataUrl: string }) => {
+export const genDescription = async (args: { fieldDataUrl: string }) => {
   return openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -13,11 +13,11 @@ export const getGridDescription = async (args: { gridDataUrl: string }) => {
         content: [
           {
             type: "text",
-            text: "Please ignore the white sections of the image. Please focus on the black rectangular section. Please describe the black rectangular section.",
+            text: "Please ignore the white section of the image. Please focus on the indexed grid section.",
           },
           {
             type: "image_url",
-            image_url: { url: args.gridDataUrl },
+            image_url: { url: args.fieldDataUrl },
           },
         ],
       },
