@@ -4,6 +4,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import OpenAI from "openai";
 import { getTaskIds } from "./getTaskIds.js";
 import { getTask } from "./getTask.js";
+import { getNumbers } from "./getNumbers.js";
 import { getGrid } from "./getGrid.js";
 import { getGridImage } from "./getGridImage.js";
 import { writeTaskImage } from "./writeTaskImage.js";
@@ -43,9 +44,11 @@ export const genRule = async () => {
   const grids = [];
   for (const i in task.train) {
     const inputUrl = `${taskId}-train-${i}-input`;
-    const input = await getGrid({ url: inputUrl });
+    const inputNumbers = await getNumbers({ url: inputUrl });
+    const input = await getGrid({ url: inputUrl, numbers: inputNumbers });
     const outputUrl = `${taskId}-train-${i}-output`;
-    const output = await getGrid({ url: outputUrl });
+    const outputNumbers = await getNumbers({ url: outputUrl });
+    const output = await getGrid({ url: outputUrl, numbers: outputNumbers });
     grids.push([input, output]);
   }
 
@@ -98,7 +101,7 @@ export const genRule = async () => {
   console.log("Sending messages to OpenAI");
 
   const ruleResponse = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
@@ -121,7 +124,8 @@ export const genRule = async () => {
   const testInputs = [];
   for (const i in task.test) {
     const inputUrl = `${taskId}-test-${i}-input`;
-    const input = await getGrid({ url: inputUrl });
+    const inputNumbers = await getNumbers({ url: inputUrl });
+    const input = await getGrid({ url: inputUrl, numbers: inputNumbers });
     const img = await getGridImage({ grid: input });
     testInputs.push(img);
   }
@@ -143,7 +147,7 @@ export const genRule = async () => {
   });
 
   const testResponse = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     tools: [
       {
         type: "function",

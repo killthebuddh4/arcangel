@@ -12,7 +12,7 @@ export const writeTaskImage = async (args: {
   testOutputs: I[];
 }) => {
   const numRows = args.inputs.length + args.testInputs.length;
-  const imgHeight = 512 * numRows + 20 * numRows + 600;
+  const imgHeight = 512 * numRows + 20 * numRows + 640;
   const imgWidth = 20 + 512 * 2;
 
   const getOffsetsForInput = (i: number) => {
@@ -29,9 +29,9 @@ export const writeTaskImage = async (args: {
     };
   };
 
-  const getOffsetsForTestInput = (i: number) => {
-    const base = args.inputs.length * 512 + args.inputs.length * 20;
+  const base = args.inputs.length * 512 + args.inputs.length * 20;
 
+  const getOffsetsForTestInput = (i: number) => {
     return {
       x: 0,
       y: base + i * 512 + i * 20,
@@ -39,8 +39,6 @@ export const writeTaskImage = async (args: {
   };
 
   const getOffsetForTestOutput = (i: number) => {
-    const base = args.inputs.length * 512 + args.inputs.length * 20;
-
     return {
       x: 512 + 20,
       y: base + i * 512 + i * 20,
@@ -52,6 +50,7 @@ export const writeTaskImage = async (args: {
   for (let i = 0; i < args.inputs.length; i++) {
     const offsets = getOffsetsForInput(i);
     const { image: input } = args.inputs[i];
+
     input.scan(0, 0, 512, 512, (x, y) => {
       image.setPixelColor(
         input.getPixelColor(x, y),
@@ -71,6 +70,14 @@ export const writeTaskImage = async (args: {
         offsets.y + y,
       );
     });
+  }
+
+  const font = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
+
+  for (let x = 0; x < imgWidth; x++) {
+    for (let y = base - 16; y < base; y++) {
+      image.setPixelColor(0x000000ff, x, y);
+    }
   }
 
   for (let i = 0; i < args.testInputs.length; i++) {
@@ -96,8 +103,6 @@ export const writeTaskImage = async (args: {
       );
     });
   }
-
-  const font = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
 
   image.print(
     font,

@@ -1,40 +1,25 @@
 import * as Arc from "./Arc.js";
 import { getGridUrl } from "./getGridUrl.js";
-import { getTask } from "./getTask.js";
 
-export const getGrid = async (args: { url: string }): Promise<Arc.Grid> => {
+export const getGrid = async (args: {
+  url: string;
+  numbers: number[][];
+}): Promise<Arc.Grid> => {
   const url = getGridUrl({ url: args.url });
-  const task = await getTask({ id: url.id });
 
-  const numbers = (() => {
-    try {
-      const t = task as {
-        [key: string]: {
-          [key: string]: number[][];
-        }[];
-      };
-
-      return t[url.trainOrTest][url.n][url.inputOrOutput];
-    } catch (e) {
-      throw new Error(
-        `Failed to read numbers from task and grid url: ${args.url}`,
-      );
-    }
-  })();
-
-  if (numbers.length === 0) {
+  if (args.numbers.length === 0) {
     throw new Error("Grid must have at least one row");
   }
 
-  const numCols = numbers[0].length;
+  const numCols = args.numbers[0].length;
 
-  for (const row of numbers) {
+  for (const row of args.numbers) {
     if (row.length !== numCols) {
       throw new Error("All rows must have the same length");
     }
   }
 
-  for (const row of numbers) {
+  for (const row of args.numbers) {
     for (const num of row) {
       if (!Number.isInteger(num)) {
         throw new Error("All values must be integers");
@@ -50,5 +35,5 @@ export const getGrid = async (args: { url: string }): Promise<Arc.Grid> => {
     }
   }
 
-  return { url, cells: numbers as Arc.Value[][] };
+  return { url, cells: args.numbers as Arc.Value[][] };
 };

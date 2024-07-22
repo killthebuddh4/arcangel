@@ -77,7 +77,7 @@ export const getGridImage = async (args: {
 
   const write = (() => {
     if (args.opts?.write === undefined) {
-      return true;
+      return false;
     }
 
     return args.opts.write;
