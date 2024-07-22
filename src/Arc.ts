@@ -1,4 +1,14 @@
-export type Grid = number[][];
+export type Value = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+export type Grid = {
+  url: {
+    id: string;
+    trainOrTest: "train" | "test";
+    inputOrOutput: "input" | "output";
+    n: number;
+  };
+  cells: Value[][];
+};
 
 export type Example = {
   input: Grid;
