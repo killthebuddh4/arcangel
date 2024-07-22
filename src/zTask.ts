@@ -1,17 +1,17 @@
 import { z } from "zod";
+import { zGrid } from "./zGrid.js";
 
-// id/(train|test)/(input|output)/[n]
 export const zTask = z.object({
   train: z.array(
     z.object({
-      input: z.array(z.array(z.number().min(0).max(9))),
-      output: z.array(z.array(z.number().min(0).max(9))),
+      input: zGrid,
+      output: zGrid,
     }),
   ),
   test: z.array(
     z.object({
-      input: z.array(z.array(z.number().min(0).max(9))),
-      output: z.array(z.array(z.number().min(0).max(9))),
+      input: zGrid,
+      output: zGrid,
     }),
   ),
 });

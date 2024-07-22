@@ -8,9 +8,10 @@ export const writeTaskImage = async (args: {
   guess: string;
   inputs: I[];
   outputs: I[];
-  tests: I[];
+  testInputs: I[];
+  testOutputs: I[];
 }) => {
-  const numRows = args.inputs.length + args.tests.length;
+  const numRows = args.inputs.length + args.testInputs.length;
   const imgHeight = 512 * numRows + 20 * numRows + 600;
   const imgWidth = 20 + 512 * 2;
 
@@ -28,11 +29,20 @@ export const writeTaskImage = async (args: {
     };
   };
 
-  const getOffsetsForTest = (i: number) => {
+  const getOffsetsForTestInput = (i: number) => {
     const base = args.inputs.length * 512 + args.inputs.length * 20;
 
     return {
       x: 0,
+      y: base + i * 512 + i * 20,
+    };
+  };
+
+  const getOffsetForTestOutput = (i: number) => {
+    const base = args.inputs.length * 512 + args.inputs.length * 20;
+
+    return {
+      x: 512 + 20,
       y: base + i * 512 + i * 20,
     };
   };
@@ -63,9 +73,21 @@ export const writeTaskImage = async (args: {
     });
   }
 
-  for (let i = 0; i < args.tests.length; i++) {
-    const offsets = getOffsetsForTest(i);
-    const { image: test } = args.tests[i];
+  for (let i = 0; i < args.testInputs.length; i++) {
+    const offsets = getOffsetsForTestInput(i);
+    const { image: test } = args.testInputs[i];
+    test.scan(0, 0, 512, 512, (x, y) => {
+      image.setPixelColor(
+        test.getPixelColor(x, y),
+        offsets.x + x,
+        offsets.y + y,
+      );
+    });
+  }
+
+  for (let i = 0; i < args.testOutputs.length; i++) {
+    const offsets = getOffsetForTestOutput(i);
+    const { image: test } = args.testOutputs[i];
     test.scan(0, 0, 512, 512, (x, y) => {
       image.setPixelColor(
         test.getPixelColor(x, y),
