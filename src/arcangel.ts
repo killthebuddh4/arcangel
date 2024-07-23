@@ -1,11 +1,17 @@
-// import { genRule } from "./genRule.js";
-// import { getReferenceImage } from "./getReferenceImage.js";
-import { genEncoded } from "./genEncoded.js";
+import { generateNumbers } from "./generateNumbers.js";
 
+const numbers = [
+  [0, 0, 0, 0, 0, 0],
+  [0, 0, 3, 0, 0, 0],
+  [0, 3, 0, 3, 0, 0],
+  [0, 0, 3, 0, 3, 0],
+  [0, 0, 0, 3, 0, 0],
+  [0, 0, 0, 0, 0, 0],
+];
+
+const streamId = `arcangel-test-${Date.now().toLocaleString()}`;
 const main = async () => {
-  // await getReferenceImage();
-  // await genRule();
-  await genEncoded();
+  await generateNumbers({ streamId, numbers });
 };
 
 main();

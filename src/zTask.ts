@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { zGrid } from "./zGrid.js";
+
+const zGrid = z.array(z.array(z.number().min(0).max(9)));
 
 export const zTask = z.object({
   train: z.array(

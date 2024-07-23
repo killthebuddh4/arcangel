@@ -11,7 +11,8 @@
     "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,
-    "outDir": "build"
+    "outDir": "build",
+    "sourceMap": true
   },
   "exclude": ["node_modules"],
   "include": ["src/**/*.ts"]

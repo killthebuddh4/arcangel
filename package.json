@@ -3,7 +3,7 @@
   "name": "@killthebuddha/arcangel",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run build:watch\" \"nodemon build/arcangel.js\"",
+    "dev": "npm run build && node --enable-source-maps build/arcangel.js",
     "start": "node build/arcangel.js",
     "lint": "eslint .",
     "format": "prettier --check .",
