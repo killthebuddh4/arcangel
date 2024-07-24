@@ -1,12 +1,12 @@
 import { Grid } from "./Grid.js";
 import { Cell } from "./Cell.js";
-import { ParseResult } from "../ParseResult.js";
+import { Maybe } from "../Maybe.js";
 
 export const getCell = (args: {
   x: number;
   y: number;
   grid: Grid;
-}): ParseResult<Cell> => {
+}): Maybe<Cell> => {
   if (args.x < 0) {
     return {
       ok: false,

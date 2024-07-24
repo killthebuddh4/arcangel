@@ -1,9 +1,9 @@
-import { ParseResult } from "../ParseResult.js";
+import { Maybe } from "../Maybe.js";
 import type { ChatCompletion } from "openai/src/resources/index.js";
 
 export const parseToolCalls = (args: {
   completion: ChatCompletion;
-}): ParseResult<
+}): Maybe<
   Array<{
     id: string;
     tool: string;

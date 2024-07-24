@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Grid } from "./Grid.js";
 import { Cell } from "./Cell.js";
-import { ParseResult } from "../ParseResult.js";
+import { Maybe } from "../Maybe.js";
 
 export const createGrid = (args: {
   height: number;
@@ -9,7 +9,7 @@ export const createGrid = (args: {
   opts?: {
     cells?: Cell[][];
   };
-}): ParseResult<Grid> => {
+}): Maybe<Grid> => {
   const cells = args.opts?.cells || [];
 
   for (let y = 0; y < args.height; y++) {
