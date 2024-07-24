@@ -1,4 +1,4 @@
-import { getImage } from "./grid/getImage.js";
+import { getImage } from "./canvas/getImage.js";
 import { Grid } from "./grid/Grid.js";
 
 export const writeImage = async (args: { grid: Grid; path: string }) => {

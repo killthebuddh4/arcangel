@@ -1,5 +1,5 @@
 import Jimp from "jimp";
-import { Grid } from "./Grid.js";
+import { Grid } from "../grid/Grid.js";
 import { getHeight } from "./getHeight.js";
 import { getWidth } from "./getWidth.js";
 

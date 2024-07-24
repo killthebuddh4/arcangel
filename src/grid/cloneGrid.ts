@@ -1,19 +1,19 @@
 import { Grid } from "./Grid.js";
 import { createGrid } from "./createGrid.js";
-import { getWidth } from "./getWidth.js";
-import { getHeight } from "./getHeight.js";
 
-export const cloneGrid = (args: { grid: Grid }): Grid => {
+export const cloneGrid = (args: { grid: Grid }) => {
   return createGrid({
-    height: getHeight({ grid: args.grid }),
-    width: getWidth({ grid: args.grid }),
+    height: args.grid.height,
+    width: args.grid.width,
     opts: {
-      cells: args.grid.cells.map((cell) => {
-        return {
-          x: cell.x,
-          y: cell.y,
-          value: cell.value,
-        };
+      cells: args.grid.cells.map((row) => {
+        return row.map((cell) => {
+          return {
+            x: cell.x,
+            y: cell.y,
+            color: cell.color,
+          };
+        });
       }),
     },
   });

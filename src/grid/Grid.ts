@@ -2,5 +2,7 @@ import { Cell } from "./Cell.js";
 
 export type Grid = {
   id: string;
-  cells: Cell[];
+  height: number;
+  width: number;
+  cells: Cell[][];
 };

@@ -1,21 +1,24 @@
 import { Grid } from "./Grid.js";
 import { Cell } from "./Cell.js";
 import { getCell } from "./getCell.js";
+import { ParseResult } from "../ParseResult.js";
 
-export const writeCells = (args: { grid: Grid; cells: Cell[] }) => {
+export const writeCells = (args: {
+  grid: Grid;
+  cells: Cell[];
+}): ParseResult<Grid> => {
   for (const cell of args.cells) {
-    const existingCell = getCell({
-      canvas: args.grid,
-      x: cell.x,
-      y: cell.y,
-    });
+    const previous = getCell({ x: cell.x, y: cell.y, grid: args.grid });
 
-    if (existingCell === undefined) {
-      args.grid.cells.push(cell);
-    } else {
-      existingCell.value = cell.value;
+    if (!previous.ok) {
+      return previous;
     }
+
+    previous.data.color = cell.color;
   }
 
-  return args.grid;
+  return {
+    ok: true,
+    data: args.grid,
+  };
 };

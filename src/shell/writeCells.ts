@@ -1,5 +1,5 @@
 import { Memory } from "./Memory.js";
-import { getRgb } from "./getRgb.js";
+import { getRgb } from "../getRgb.js";
 import { writeCells as lowLevelWriteCells } from "../grid/writeCells.js";
 
 export const writeCells = (args: {

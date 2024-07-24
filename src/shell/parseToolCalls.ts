@@ -1,4 +1,4 @@
-import { ParseResult } from "./ParseResult.js";
+import { ParseResult } from "../ParseResult.js";
 import type { ChatCompletion } from "openai/src/resources/index.js";
 
 export const parseToolCalls = (args: {

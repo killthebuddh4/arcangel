@@ -3,9 +3,9 @@ import { SYSTEM } from "./SYSTEM.js";
 import OpenAI from "openai";
 import { writeCellToolSpec } from "./commands/writeCellsToolSpec.js";
 import { writeCellSchema } from "./commands/writeCellsSchema.js";
-import { getImage } from "../grid/getImage.js";
+import { getImage } from "../canvas/getImage.js";
 import { getUserImageMessage } from "../openai/getUserImageMessage.js";
-import { getUserTextMessage } from "../openai/getUserTextMessage.js";
+import { Grid } from "../grid/Grid.js";
 import { parseToolCalls } from "./parseToolCalls.js";
 import { Message } from "../openai/Message.js";
 import { v4 as uuid } from "uuid";
@@ -14,12 +14,16 @@ import { Memory } from "./Memory.js";
 import { writeCells } from "./writeCells.js";
 import { createGrid } from "../grid/createGrid.js";
 import { getToolResponseMessage } from "../openai/getToolResponseMessage.js";
+import { getHeight } from "../grid/getHeight.js";
+import { getWidth } from "../grid/getWidth.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const exec = async () => {
+export const exec = async (args: { grid: Grid }) => {
+  const testImage = await getImage({ grid: args.grid });
+
   const LOOP_STATE = {
     id: uuid(),
     maxIterations: 100,
@@ -28,22 +32,31 @@ export const exec = async () => {
       getSystemMessage({
         text: SYSTEM,
       }),
-      getUserTextMessage({
-        text: "Please draw a yellow X from corner to corner. If there's already a yellow X, draw a red X inside each of the four triangular sections created by the yellow X. The red Xs should not overlap the yellow X at all.",
+      getUserImageMessage({
+        text: "Please use the writeCell command to draw a copy of this image.",
+        dataUrl: testImage.dataUrl,
       }),
     ] as Message[],
   };
 
   const memory: Memory = {
     commands: [],
-    grid: createGrid({ height: 30, width: 30 }),
+    grid: createGrid({
+      height: getHeight({ grid: args.grid }),
+      width: getWidth({ grid: args.grid }),
+    }),
   };
+
+  await writeImage({
+    path: `data/images/shell/${LOOP_STATE.id}-${LOOP_STATE.currentIteration}-test.png`,
+    grid: args.grid,
+  });
 
   while (LOOP_STATE.currentIteration < LOOP_STATE.maxIterations) {
     LOOP_STATE.currentIteration++;
 
     await writeImage({
-      path: `data/images/shell/${LOOP_STATE.id}-${LOOP_STATE.currentIteration}-canvas.png`,
+      path: `data/images/shell/${LOOP_STATE.id}-${LOOP_STATE.currentIteration}-gen.png`,
       grid: memory.grid,
     });
 
@@ -80,8 +93,6 @@ export const exec = async () => {
           `Failed to parse tool arguments: ${args.error.message}`,
         );
       }
-
-      console.log("ARGS FOR WRITE CELL", JSON.stringify(args.data, null, 2));
 
       LOOP_STATE.messages.push(
         getToolResponseMessage({

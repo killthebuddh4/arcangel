@@ -9,9 +9,26 @@ export const getRgb = (args: {
     | "pink"
     | "brown"
     | "gray"
-    | "black";
+    | "black"
+    | number;
 }): [number, number, number] => {
-  switch (args.color) {
+  const color = (() => {
+    if (typeof args.color === "string") {
+      return args.color;
+    }
+
+    if (!Number.isInteger(args.color)) {
+      throw new Error(`Invalid color: ${args.color}`);
+    }
+
+    if (args.color < 0 || args.color > 9) {
+      throw new Error(`Invalid color: ${args.color}`);
+    }
+
+    return COLORS[args.color];
+  })();
+
+  switch (color) {
     case "red":
       return [255, 0, 0];
     case "orange":
@@ -36,3 +53,16 @@ export const getRgb = (args: {
       throw new Error(`Invalid color: ${args.color}`);
   }
 };
+
+const COLORS = [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "pink",
+  "brown",
+  "gray",
+  "black",
+] as const;
