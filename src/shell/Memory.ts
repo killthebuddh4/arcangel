@@ -3,5 +3,5 @@ import { Command } from "./commands/Command.js";
 
 export type Memory = {
   commands: Command[];
-  grid: Grid | null;
+  grid: Grid;
 };

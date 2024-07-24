@@ -1,10 +1,8 @@
 import { getSystemMessage } from "../openai/getSystemMessage.js";
-import { SYSTEM } from "./prompts/SYSTEM.js";
+import { SYSTEM } from "./SYSTEM.js";
 import OpenAI from "openai";
-import { initDimensionsSchema } from "./commands/initDimensionsSchema.js";
-import { initDimensionsToolSpec } from "./commands/initDimensionsToolSpec.js";
-import { writeCellToolSpec } from "./commands/writeCellToolSpec.js";
-import { writeCellSchema } from "./commands/writeCellSchema.js";
+import { writeCellToolSpec } from "./commands/writeCellsToolSpec.js";
+import { writeCellSchema } from "./commands/writeCellsSchema.js";
 import { getImage } from "../grid/getImage.js";
 import { getUserImageMessage } from "../openai/getUserImageMessage.js";
 import { getUserTextMessage } from "../openai/getUserTextMessage.js";
@@ -13,8 +11,9 @@ import { Message } from "../openai/Message.js";
 import { v4 as uuid } from "uuid";
 import { writeImage } from "../writeImage.js";
 import { Memory } from "./Memory.js";
-import { writeCell } from "./writeCell.js";
-import { initDimensions } from "./initDimensions.js";
+import { writeCells } from "./writeCells.js";
+import { createGrid } from "../grid/createGrid.js";
+import { getToolResponseMessage } from "../openai/getToolResponseMessage.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -30,93 +29,81 @@ export const exec = async () => {
         text: SYSTEM,
       }),
       getUserTextMessage({
-        text: "Please draw me a 5x5 green square inside a 20x20 grid.",
+        text: "Please draw a yellow X from corner to corner. If there's already a yellow X, draw a red X inside each of the four triangular sections created by the yellow X. The red Xs should not overlap the yellow X at all.",
       }),
     ] as Message[],
   };
 
   const memory: Memory = {
     commands: [],
-    grid: null,
+    grid: createGrid({ height: 30, width: 30 }),
   };
 
   while (LOOP_STATE.currentIteration < LOOP_STATE.maxIterations) {
     LOOP_STATE.currentIteration++;
 
-    if (memory.grid !== null) {
-      await writeImage({
-        path: `data/images/shell/${LOOP_STATE.id}-${LOOP_STATE.currentIteration}-canvas.png`,
-        grid: memory.grid,
-      });
-    }
+    await writeImage({
+      path: `data/images/shell/${LOOP_STATE.id}-${LOOP_STATE.currentIteration}-canvas.png`,
+      grid: memory.grid,
+    });
+
+    console.log("MESSAGES", JSON.stringify(LOOP_STATE.messages, null, 2));
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      tools: (() => {
-        if (memory.grid === null) {
-          return [initDimensionsToolSpec];
-        } else {
-          return [writeCellToolSpec];
-        }
-      })(),
+      model: "gpt-4o",
+      tools: [writeCellToolSpec],
       messages: LOOP_STATE.messages,
     });
 
     const toolCalls = parseToolCalls({ completion: response });
 
     if (!toolCalls.ok) {
-      const message = response.choices[0].message;
-      // TODO FUCK THE OPENAI TYPES!!
-      console.log("GOT A MESSAGE", message);
-      LOOP_STATE.messages.push(message as Message);
-      continue;
+      throw new Error(`Failed to parse tool calls: ${toolCalls.reason}`);
     }
 
-    const toolCall = toolCalls.data[0];
+    LOOP_STATE.messages.push(response.choices[0].message as Message);
 
-    switch (toolCall.tool) {
-      case "writeCell": {
-        const args = writeCellSchema.safeParse(toolCall.args);
+    for (const toolCall of toolCalls.data) {
+      console.log(
+        "TOOL CALL MESSAGE",
+        JSON.stringify(response.choices[0].message),
+      );
 
-        if (!args.success) {
-          console.log("invalid writeCell args, exiting");
-          break;
-        }
-
-        writeCell({
-          memory,
-          cell: args.data,
-        });
-        break;
+      if (toolCall.tool !== "writeCells") {
+        throw new Error(`Unexpected tool: ${toolCall.tool}`);
       }
-      case "initDimensions": {
-        const args = initDimensionsSchema.safeParse(toolCall.args);
 
-        if (!args.success) {
-          console.log("invalid initDimensions args, exiting");
-          break;
-        }
+      const args = writeCellSchema.safeParse(toolCall.args);
 
-        initDimensions({
-          memory,
-          height: args.data.dimensions.height,
-          width: args.data.dimensions.width,
-        });
-
-        break;
+      if (!args.success) {
+        throw new Error(
+          `Failed to parse tool arguments: ${args.error.message}`,
+        );
       }
-      default: {
-        throw new Error(`Invalid tool: ${toolCall.tool}`);
-      }
-    }
 
-    if (memory.grid !== null) {
-      const image = await getImage({ grid: memory.grid });
-      const gridMessage = getUserImageMessage({
-        text: "Here is an image of the resulting canvas.",
-        dataUrl: image.dataUrl,
+      console.log("ARGS FOR WRITE CELL", JSON.stringify(args.data, null, 2));
+
+      LOOP_STATE.messages.push(
+        getToolResponseMessage({
+          toolCallId: toolCall.id,
+          tool: "writeCell",
+          result: "cells written",
+        }) as Message,
+      );
+
+      writeCells({
+        memory,
+        cells: args.data.cells,
       });
-      LOOP_STATE.messages.push(gridMessage);
     }
+
+    const image = await getImage({ grid: memory.grid });
+
+    const gridMessage = getUserImageMessage({
+      text: "Here is an image of the resulting canvas.",
+      dataUrl: image.dataUrl,
+    });
+
+    LOOP_STATE.messages.push(gridMessage);
   }
 };

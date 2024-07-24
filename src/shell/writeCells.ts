@@ -1,10 +1,10 @@
 import { Memory } from "./Memory.js";
 import { getRgb } from "./getRgb.js";
-import { writeCells } from "../grid/writeCells.js";
+import { writeCells as lowLevelWriteCells } from "../grid/writeCells.js";
 
-export const writeCell = (args: {
+export const writeCells = (args: {
   memory: Memory;
-  cell: {
+  cells: Array<{
     x: number;
     y: number;
     color:
@@ -18,22 +18,22 @@ export const writeCell = (args: {
       | "brown"
       | "gray"
       | "black";
-  };
+  }>;
 }) => {
   if (args.memory.grid === null) {
     throw new Error("Memory grid is null");
   }
 
-  const color = getRgb({ color: args.cell.color });
+  const lowLevelCells = args.cells.map((cell) => {
+    return {
+      x: cell.x,
+      y: cell.y,
+      value: getRgb({ color: cell.color }),
+    };
+  });
 
-  return writeCells({
+  return lowLevelWriteCells({
     grid: args.memory.grid,
-    cells: [
-      {
-        x: args.cell.x,
-        y: args.cell.y,
-        value: color,
-      },
-    ],
+    cells: lowLevelCells,
   });
 };
