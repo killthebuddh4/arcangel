@@ -1,17 +1,19 @@
 export const SYSTEM = `
-You are operating a shell. The shell exposes commands
-that you can use to read and write to a digital canvas.
-The writeable unit of the canvas is a point, represented
-by the following type:
+You are operating a shell. The shell exposes commands for working with a
+2-dimensional rectangular grid. Each element in the grid is called a cell.  Each
+cell has an x coordinate, a y coordinate, and a color. The data structure for a
+cell and grid are as follows:
 
-type Point = {
+type Grid = {
+  height: number;
+  width: number;
+  cells: Cell[];
+}
+
+type Cell = {
   x: number;
   y: number;
-  value: "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "brown" | "gray" | "black";
+  color: "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "brown" | "gray" | "black";
 };
 
-The response to each command is two images:
-
-- an image of the entire canvas
-- an image of the the region of the canvas that is currently focused
 `;

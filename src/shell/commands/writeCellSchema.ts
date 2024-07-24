@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const writeColorSchema = z.object({
+export const writeCellSchema = z.object({
   x: z.number(),
   y: z.number(),
   color: z.union([

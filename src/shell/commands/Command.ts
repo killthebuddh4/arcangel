@@ -1,5 +1,5 @@
-import { SetBounds } from "./SetBounds.js";
+import { InitDimensions } from "./InitDimensions.js";
 import { SetView } from "./SetView.js";
-import { WriteColor } from "./WriteColor.js";
+import { WriteCell } from "./WriteCell.js";
 
-export type Command = SetBounds | SetView | WriteColor;
+export type Command = InitDimensions | SetView | WriteCell;
