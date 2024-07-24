@@ -1,6 +1,5 @@
 import Jimp from "jimp";
-import { getPoint } from "../getPoint.js";
-import { getColor } from "./getColor.js";
+import { getPoint } from "./getPoint.js";
 import { getBoundingBox } from "./getBoundingBox.js";
 import { Canvas } from "./Canvas.js";
 
@@ -19,7 +18,7 @@ export const getImage = async (args: { canvas: Canvas }) => {
         if (point === undefined) {
           return [255, 255, 255];
         } else {
-          return getColor({ value: point.value });
+          return point.value;
         }
       })();
 

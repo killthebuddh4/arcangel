@@ -3,7 +3,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { config } from "../config.js";
 import { Maybe } from "../Maybe.js";
-import { taskSchema } from "../taskSchema.js";
+import { taskSchema } from "./taskSchema.js";
 
 export const getTask = async (args: {
   id: string;
