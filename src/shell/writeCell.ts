@@ -1,6 +1,6 @@
 import { Memory } from "./Memory.js";
 import { getRgb } from "./getRgb.js";
-import { drawPoints } from "../canvas/drawPoints.js";
+import { writeCells } from "../grid/writeCells.js";
 
 export const writeCell = (args: {
   memory: Memory;
@@ -20,11 +20,15 @@ export const writeCell = (args: {
       | "black";
   };
 }) => {
+  if (args.memory.grid === null) {
+    throw new Error("Memory grid is null");
+  }
+
   const color = getRgb({ color: args.cell.color });
 
-  return drawPoints({
-    canvas: args.memory.canvas,
-    points: [
+  return writeCells({
+    grid: args.memory.grid,
+    cells: [
       {
         x: args.cell.x,
         y: args.cell.y,

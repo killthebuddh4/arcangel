@@ -1,4 +1,4 @@
-import { Canvas } from "../canvas/Canvas.js";
+import { Grid } from "../grid/Grid.js";
 import { Edge } from "./Edge.js";
 import { Node } from "./Node.js";
 import { getGraph } from "./getGraph.js";
@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 export const addNode = (args: {
   upstream: Node;
   operation: string;
-  canvas: Canvas;
+  canvas: Grid;
 }) => {
   const edge: Edge = {
     id: uuidv4(),

@@ -1,12 +1,11 @@
 import { getSystemMessage } from "../openai/getSystemMessage.js";
 import { SYSTEM } from "./prompts/SYSTEM.js";
-import { createCanvas } from "../canvas/createCanvas.js";
 import OpenAI from "openai";
 import { initDimensionsSchema } from "./commands/initDimensionsSchema.js";
 import { initDimensionsToolSpec } from "./commands/initDimensionsToolSpec.js";
 import { writeCellToolSpec } from "./commands/writeCellToolSpec.js";
 import { writeCellSchema } from "./commands/writeCellSchema.js";
-import { getImage } from "../canvas/getImage.js";
+import { getImage } from "../grid/getImage.js";
 import { getUserImageMessage } from "../openai/getUserImageMessage.js";
 import { getUserTextMessage } from "../openai/getUserTextMessage.js";
 import { parseToolCalls } from "./parseToolCalls.js";
@@ -37,26 +36,24 @@ export const exec = async () => {
   };
 
   const memory: Memory = {
-    dimensions: {
-      height: 0,
-      width: 0,
-    },
     commands: [],
-    canvas: createCanvas({}),
+    grid: null,
   };
 
   while (LOOP_STATE.currentIteration < LOOP_STATE.maxIterations) {
     LOOP_STATE.currentIteration++;
 
-    await writeImage({
-      path: `data/images/shell/${LOOP_STATE.id}-${LOOP_STATE.currentIteration}-canvas.png`,
-      canvas: memory.canvas,
-    });
+    if (memory.grid !== null) {
+      await writeImage({
+        path: `data/images/shell/${LOOP_STATE.id}-${LOOP_STATE.currentIteration}-canvas.png`,
+        grid: memory.grid,
+      });
+    }
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       tools: (() => {
-        if (memory.dimensions.height === 0 || memory.dimensions.width === 0) {
+        if (memory.grid === null) {
           return [initDimensionsToolSpec];
         } else {
           return [writeCellToolSpec];
@@ -113,13 +110,13 @@ export const exec = async () => {
       }
     }
 
-    const image = await getImage({ canvas: memory.canvas });
-
-    const canvasMessage = getUserImageMessage({
-      text: "Here is an image of the resulting canvas.",
-      dataUrl: image.dataUrl,
-    });
-
-    LOOP_STATE.messages.push(canvasMessage);
+    if (memory.grid !== null) {
+      const image = await getImage({ grid: memory.grid });
+      const gridMessage = getUserImageMessage({
+        text: "Here is an image of the resulting canvas.",
+        dataUrl: image.dataUrl,
+      });
+      LOOP_STATE.messages.push(gridMessage);
+    }
   }
 };

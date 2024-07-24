@@ -1,11 +1,7 @@
-import { Canvas } from "../canvas/Canvas.js";
+import { Grid } from "../grid/Grid.js";
 import { Command } from "./commands/Command.js";
 
 export type Memory = {
-  dimensions: {
-    height: number;
-    width: number;
-  };
   commands: Command[];
-  canvas: Canvas;
+  grid: Grid | null;
 };
