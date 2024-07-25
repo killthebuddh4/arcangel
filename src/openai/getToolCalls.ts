@@ -1,7 +1,7 @@
 import { Maybe } from "../Maybe.js";
 import type { ChatCompletion } from "openai/src/resources/index.js";
 
-export const parseToolCalls = (args: {
+export const getToolCalls = (args: {
   completion: ChatCompletion;
 }): Maybe<
   Array<{
