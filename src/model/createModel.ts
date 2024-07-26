@@ -1,20 +1,23 @@
 import { Model } from "./Model.js";
-import { Operation } from "./Operation.js";
-import { Predicate } from "./Predicate.js";
-import { Relation } from "./Relation.js";
+import { Operator } from "../operator/Operator.js";
+import { Predicate } from "../predicate/Predicate.js";
+import { Relation } from "../relation/Relation.js";
+import { Invariant } from "../invariant/Invariant.js";
 import { State } from "./State.js";
 
 export const createModel = (args: {
   initial: State;
-  operations: Operation[];
+  operators: Operator[];
   predicates: Predicate[];
   relations: Relation[];
+  invariants: Invariant[];
 }): Model => {
   return {
     states: [args.initial],
     transitions: [],
-    operations: args.operations,
+    operators: args.operators,
     predicates: args.predicates,
     relations: args.relations,
+    invariants: args.invariants,
   };
 };

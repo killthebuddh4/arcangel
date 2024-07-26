@@ -1,5 +1,5 @@
 import { Model } from "./Model.js";
-import { Operation } from "./Operation.js";
+import { Operator } from "../operator/Operator.js";
 import { State } from "./State.js";
 import { Maybe } from "../Maybe.js";
 import { v4 as uuidv4 } from "uuid";
@@ -7,17 +7,17 @@ import { Transition } from "./Transition.js";
 
 export const iterate = (args: {
   model: Model;
-  operation: Operation;
+  operator: Operator;
   state: State;
 }): Maybe<Model> => {
-  const isDefinedOperation = args.model.operations.some(
-    (operation) => operation.id === args.operation.id,
+  const isDefinedOperation = args.model.operators.some(
+    (operator) => operator.id === args.operator.id,
   );
 
   if (!isDefinedOperation) {
     return {
       ok: false,
-      reason: `operation ${args.operation.id} is not defined in the model`,
+      reason: `operator ${args.operator.id} is not defined in the model`,
     };
   }
 
@@ -33,17 +33,17 @@ export const iterate = (args: {
   }
 
   const isOperationAlreadyApplied = args.state.downstream.some(
-    (transition) => transition.operation.id === args.operation.id,
+    (transition) => transition.operator.id === args.operator.id,
   );
 
   if (isOperationAlreadyApplied) {
     return {
       ok: false,
-      reason: `operation ${args.operation.id} has already been applied to state ${args.state.id}`,
+      reason: `operator ${args.operator.id} has already been applied to state ${args.state.id}`,
     };
   }
 
-  const isOperationApplicable = args.operation.interface.upstream.every(
+  const isOperationApplicable = args.operator.interface.upstream.every(
     (requirement) => {
       return args.state.data.some((datum) => {
         datum.predicate.id === requirement.predicate.id &&
@@ -55,11 +55,11 @@ export const iterate = (args: {
   if (!isOperationApplicable) {
     return {
       ok: false,
-      reason: `operation ${args.operation.id} is not applicable to state ${args.state.id}`,
+      reason: `operator ${args.operator.id} is not applicable to state ${args.state.id}`,
     };
   }
 
-  const result = args.operation.implementation(args.state.field);
+  const result = args.operator.implementation(args.state.field);
 
   const state: State = {
     id: uuidv4(),
@@ -81,7 +81,7 @@ export const iterate = (args: {
         observation: relation.evaluate(args.state.field, result),
       };
     }),
-    operation: args.operation,
+    operator: args.operator,
     upstream: args.state,
     downstream: state,
   };

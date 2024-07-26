@@ -1,8 +1,8 @@
-import { createRelation } from "../model/createRelation.js";
-import { Observation } from "../model/Observation.js";
+import { createRelation } from "../relation/createRelation.js";
+import { Observation } from "../observation/Observation.js";
 import { Field } from "../field/Field.js";
 import { compare } from "../field/compare.js";
-import { crop } from "../transforms/crop.js";
+import { crop } from "../operators/crop.js";
 import { clone } from "../field/clone.js";
 
 const id = "isCropped";

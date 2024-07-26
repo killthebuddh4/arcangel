@@ -1,9 +1,9 @@
 import { Field } from "../field/Field.js";
-import { Observation } from "./Observation.js";
-import { Predicate } from "./Predicate.js";
-import { Relation } from "./Relation.js";
+import { Observation } from "../observation/Observation.js";
+import { Predicate } from "../predicate/Predicate.js";
+import { Relation } from "../relation/Relation.js";
 
-export type Operation = {
+export type Operator = {
   id: string;
   description: string;
   interface: {
@@ -11,5 +11,5 @@ export type Operation = {
     downstream: Array<{ predicate: Predicate; observation: Observation }>;
     transition: Array<{ relation: Relation; observation: Observation }>;
   };
-  implementation: (field: Field) => Field;
+  implementation: (fields: Field) => Field;
 };

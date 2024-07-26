@@ -1,10 +1,10 @@
-import { Operation } from "./Operation.js";
-import { Observation } from "./Observation.js";
+import { Operator } from "../operator/Operator.js";
+import { Observation } from "../observation/Observation.js";
 import { State } from "./State.js";
-import { Relation } from "./Relation.js";
+import { Relation } from "../relation/Relation.js";
 
 export type Transition = {
-  operation: Operation;
+  operator: Operator;
   data: Array<{ relation: Relation; observation: Observation }>;
   upstream: State;
   downstream: State;

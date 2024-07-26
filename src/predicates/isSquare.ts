@@ -1,6 +1,6 @@
-import { createPredicate } from "../model/createPredicate.js";
+import { createPredicate } from "../predicate/createPredicate.js";
 import { Field } from "../field/Field.js";
-import { Observation } from "../model/Observation.js";
+import { Observation } from "../observation/Observation.js";
 
 const id = "isSquare";
 

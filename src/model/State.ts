@@ -1,7 +1,7 @@
 import { Field } from "../field/Field.js";
 import { Transition } from "./Transition.js";
-import { Observation } from "./Observation.js";
-import { Predicate } from "./Predicate.js";
+import { Observation } from "../observation/Observation.js";
+import { Predicate } from "../predicate/Predicate.js";
 
 export type State = {
   id: string;

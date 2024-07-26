@@ -2,7 +2,7 @@
 // Not bothering to write "real" tests until things are more stable.
 
 // import { getRandomTask } from "./getRandomTask.js";
-// import { rotate } from "./operations/rotate.js";
+// import { rotate } from "./operators/rotate.js";
 // import { readArc } from "./readArc.js";
 // import { createGridImage } from "./createGridImage.js";
 

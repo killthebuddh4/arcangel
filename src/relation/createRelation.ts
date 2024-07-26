@@ -1,5 +1,5 @@
 import { Field } from "../field/Field.js";
-import { Observation } from "./Observation.js";
+import { Observation } from "../observation/Observation.js";
 import { Relation } from "./Relation.js";
 
 export const createRelation = (args: {
