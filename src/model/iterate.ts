@@ -43,10 +43,11 @@ export const iterate = (args: {
     };
   }
 
-  const isOperationApplicable = args.operation.interface.input.every(
-    (input) => {
-      return args.state.facts.some((fact) => {
-        fact.predicate.id === input.predicate.id && fact.data === input.data;
+  const isOperationApplicable = args.operation.interface.upstream.every(
+    (requirement) => {
+      return args.state.data.some((datum) => {
+        datum.predicate.id === requirement.predicate.id &&
+          datum.observation.isPositive === requirement.observation.isPositive;
       });
     },
   );
@@ -60,35 +61,26 @@ export const iterate = (args: {
 
   const result = args.operation.implementation(args.state.field);
 
-  const facts = args.model.predicates.map((predicate) => {
-    return {
-      predicate,
-      data: predicate.implementation(result),
-    };
-  });
-
-  const isResultValid = args.operation.interface.output.every((output) => {
-    return facts.some((fact) => {
-      fact.predicate.id === output.predicate.id && fact.data === output.data;
-    });
-  });
-
-  if (!isResultValid) {
-    return {
-      ok: false,
-      reason: `operation ${args.operation.id} produced an invalid result`,
-    };
-  }
-
   const state: State = {
     id: uuidv4(),
     field: result,
-    facts,
+    data: args.model.predicates.map((predicate) => {
+      return {
+        predicate,
+        observation: predicate.evaluate(result),
+      };
+    }),
     upstream: null,
     downstream: [],
   };
 
   const transition: Transition = {
+    data: args.model.relations.map((relation) => {
+      return {
+        relation,
+        observation: relation.evaluate(args.state.field, result),
+      };
+    }),
     operation: args.operation,
     upstream: args.state,
     downstream: state,

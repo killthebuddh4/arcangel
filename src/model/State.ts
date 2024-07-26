@@ -1,11 +1,12 @@
 import { Field } from "../field/Field.js";
 import { Transition } from "./Transition.js";
-import { Fact } from "./Fact.js";
+import { Observation } from "./Observation.js";
+import { Predicate } from "./Predicate.js";
 
 export type State = {
   id: string;
   field: Field;
-  facts: Fact[];
+  data: Array<{ predicate: Predicate; observation: Observation }>;
   upstream: Transition | null;
   downstream: Transition[];
 };
