@@ -18,8 +18,8 @@ export const rotate = (args: { field: Field }): Field => {
         throw new Error(point.reason);
       }
 
-      const rotatedX = y;
-      const rotatedY = args.field.width - x - 1;
+      const rotatedY = x;
+      const rotatedX = args.field.height - y - 1;
 
       write({
         field: field.data,

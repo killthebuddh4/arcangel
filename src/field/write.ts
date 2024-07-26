@@ -7,7 +7,7 @@ export const write = (args: {
   x: number;
   y: number;
   value: Value;
-}): Maybe<boolean> => {
+}): Maybe<Field> => {
   if (args.x < 0) {
     return {
       ok: false,
@@ -40,6 +40,6 @@ export const write = (args: {
 
   return {
     ok: true,
-    data: true,
+    data: args.field,
   };
 };
