@@ -2,7 +2,7 @@ import { createRelation } from "../relation/createRelation.js";
 import { Observation } from "../observation/Observation.js";
 import { Field } from "../field/Field.js";
 import { compare } from "../field/compare.js";
-import { crop } from "../operators/crop.js";
+import { crop } from "../primitives/crop.js";
 import { clone } from "../field/clone.js";
 
 const id = "isCropped";

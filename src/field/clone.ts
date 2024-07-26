@@ -1,7 +1,7 @@
 import { Field } from "./Field.js";
 import { Point } from "./Point.js";
 
-export const clone = (args: { field: Field }) => {
+export const clone = (args: { field: Field }): Field => {
   const points: Point[][] = [];
 
   for (let y = 0; y < args.field.height; y++) {

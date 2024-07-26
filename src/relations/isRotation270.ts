@@ -1,7 +1,7 @@
 import { createRelation } from "../relation/createRelation.js";
 import { Observation } from "../observation/Observation.js";
 import { Field } from "../field/Field.js";
-import { rotate } from "../operators/rotate.js";
+import { rotate } from "../primitives/rotate.js";
 import { compare } from "../field/compare.js";
 
 const id = "isRotation270";
