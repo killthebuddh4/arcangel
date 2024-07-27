@@ -1,14 +1,13 @@
-export type Feedback<T> =
+export type Feedback<T, C extends string = string> =
   | {
-      ok: true;
       id: string;
+      ok: true;
       data: T;
-      reason?: undefined;
     }
   | {
-      ok: false;
       id: string;
+      ok: false;
+      code: C;
       reason: string;
       details?: unknown;
-      data?: undefined;
     };

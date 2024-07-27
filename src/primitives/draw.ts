@@ -22,7 +22,7 @@ export const draw = (args: {
     if (!result.ok) {
       // TODO Probably need to work the `reason` field here to make it more
       // clearly related to the draw function rather than a single write.
-      return result;
+      throw new Error(`Failed to draw: ${result.reason}`);
     }
   }
 

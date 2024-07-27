@@ -3,7 +3,15 @@ import { Feedback } from "../feedback/Feedback.js";
 import { compare } from "../field/compare.js";
 import { createFeedback } from "../feedback/createFeedback.js";
 
-export const diff = (args: { a: Field; b: Field }): Feedback<string> => {
+// TODO I feel like we're using this incorrectly here. Well, maybe not.
+// Sometimes we use Feedback for errors, sometimes for description. Is
+// this bad? Do we need to separate these two concepts?
+type DiffFeedbackCode = "VERY_DIFFERENT" | "SOMEWHAT_DIFFERENT";
+
+export const diff = (args: {
+  a: Field;
+  b: Field;
+}): Feedback<string, DiffFeedbackCode> => {
   const comparison = compare({ a: args.a, b: args.b });
 
   if (comparison.result === "equal") {
@@ -26,12 +34,14 @@ export const diff = (args: { a: Field; b: Field }): Feedback<string> => {
   if (percentMismatch > 50 || comparison.mismatches.length > 100) {
     return createFeedback({
       ok: false,
+      code: "VERY_DIFFERENT",
       reason: `The fields are very different. ${percentMismatch}% of the points do not match.`,
     });
   }
 
   return createFeedback({
     ok: false,
+    code: "SOMEWHAT_DIFFERENT",
     reason: `The fields are somewhat different. ${percentMismatch}% of the points do not match. Here are the problematic points: ${JSON.stringify(comparison.mismatches)}`,
   });
 };

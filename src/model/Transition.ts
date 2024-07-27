@@ -4,6 +4,7 @@ import { State } from "./State.js";
 import { Relation } from "../relation/Relation.js";
 
 export type Transition = {
+  id: string;
   operator: Operator;
   data: Array<{ relation: Relation; observation: Observation }>;
   upstream: State;

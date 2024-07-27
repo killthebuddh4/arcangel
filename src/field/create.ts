@@ -3,13 +3,16 @@ import { Point } from "./Point.js";
 import { Feedback } from "../feedback/Feedback.js";
 import { createFeedback } from "../feedback/createFeedback.js";
 
+type CreateFeedbackCode = "BAD_HEIGHT" | "BAD_WIDTH";
+
 export const create = (args: {
   height: number;
   width: number;
-}): Feedback<Field> => {
+}): Feedback<Field, CreateFeedbackCode> => {
   if (args.height < 1) {
     return createFeedback({
       ok: false,
+      code: "BAD_HEIGHT",
       reason: `expected height to be greater than or equal to 1, but got ${args.height}`,
     });
   }
@@ -17,6 +20,7 @@ export const create = (args: {
   if (args.width < 1) {
     return createFeedback({
       ok: false,
+      code: "BAD_WIDTH",
       reason: `expected width to be greater than or equal to 1, but got ${args.width}`,
     });
   }

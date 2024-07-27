@@ -1,21 +1,25 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { Feedback } from "../feedback/Feedback.js";
 import { createFeedback } from "../feedback/createFeedback.js";
 import type { ChatCompletionTool } from "openai/src/resources/index.js";
+import { Handler } from "./Handler.js";
+import { Feedback } from "../feedback/Feedback.js";
+import { getHead } from "../model/getHeads.js";
+import { Field } from "../field/Field.js";
 
-export const createTool = <
-  I extends z.ZodTypeAny,
-  O extends z.ZodTypeAny,
->(args: {
+type ToolFeedbackCode = "INVALID_JSON" | "INVALID_ARGS";
+
+export const createTool = <I, O>(args: {
   name: string;
   description: string;
-  inputSchema: I;
-  outputSchema: O;
-  handler: (args: z.infer<I>) => z.infer<O>;
+  inputSchema: z.ZodType<I>;
+  outputSchema: z.ZodType<O>;
+  tool: (field: Field, i: I) => Feedback<O>;
 }): {
   spec: ChatCompletionTool;
-  tool: (generated: string) => Feedback<z.infer<O>>;
+  // TODO This of course doesn't actually do anything but it's here as a
+  // reminder to do it better.
+  handler: (generated: string) => Feedback<O>;
 } => {
   return {
     spec: {
@@ -26,13 +30,14 @@ export const createTool = <
         parameters: zodToJsonSchema(args.inputSchema),
       },
     },
-    tool: (generated: string) => {
+    handler: (generated: string) => {
       let json: unknown;
       try {
         json = JSON.parse(generated);
       } catch {
         return createFeedback({
           ok: false,
+          code: "INVALID_JSON",
           reason: `Generated string was not valid JSON`,
         });
       }
@@ -42,11 +47,14 @@ export const createTool = <
       if (!input.success) {
         return createFeedback({
           ok: false,
+          code: "INVALID_ARGS",
           reason: `Generated JSON did not match input schema`,
         });
       }
 
-      return args.handler(input.data);
+      const head = getHead();
+
+      return args.tool(head.field, input.data);
     },
   };
 };

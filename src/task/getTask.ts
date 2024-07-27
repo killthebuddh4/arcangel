@@ -6,9 +6,14 @@ import { Feedback } from "../feedback/Feedback.js";
 import { taskSchema } from "./taskSchema.js";
 import { createFeedback } from "../feedback/createFeedback.js";
 
+type GetTaskFeedbackCode =
+  | "FILE_READ_ERROR"
+  | "INVALID_JSON"
+  | "SCHEMA_MISMATCH";
+
 export const getTask = async (args: {
   id: string;
-}): Promise<Feedback<z.infer<typeof taskSchema>>> => {
+}): Promise<Feedback<z.infer<typeof taskSchema>, GetTaskFeedbackCode>> => {
   let content: string;
   try {
     const filename = `${args.id}.json`;
@@ -16,6 +21,7 @@ export const getTask = async (args: {
   } catch {
     return createFeedback({
       ok: false,
+      code: "FILE_READ_ERROR",
       reason: `Failed to read task from disk for task id: ${args.id}`,
     });
   }
@@ -26,6 +32,7 @@ export const getTask = async (args: {
   } catch {
     return createFeedback({
       ok: false,
+      code: "INVALID_JSON",
       reason: `Task with id ${args.id} is not a valid JSON file`,
     });
   }
@@ -35,6 +42,7 @@ export const getTask = async (args: {
   if (!task.success) {
     return createFeedback({
       ok: false,
+      code: "SCHEMA_MISMATCH",
       reason: `Task with id ${args.id} does not match the expected schema`,
     });
   }
