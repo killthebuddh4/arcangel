@@ -1,45 +1,46 @@
 import { Field } from "./Field.js";
 import { Value } from "./Value.js";
-import { Maybe } from "../Maybe.js";
+import { Feedback } from "../feedback/Feedback.js";
+import { createFeedback } from "../feedback/createFeedback.js";
 
 export const write = (args: {
   field: Field;
   x: number;
   y: number;
   value: Value;
-}): Maybe<Field> => {
+}): Feedback<Field> => {
   if (args.x < 0) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected x to be greater than or equal to 0, but got ${args.x}`,
-    };
+    });
   }
 
   if (args.y < 0) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected y to be greater than or equal to 0, but got ${args.y}`,
-    };
+    });
   }
 
   if (args.x >= args.field.width) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected x to be less than ${args.field.width}, but got ${args.x}`,
-    };
+    });
   }
 
   if (args.y >= args.field.height) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected y to be less than ${args.field.height}, but got ${args.y}`,
-    };
+    });
   }
 
   args.field.points[args.y][args.x].value = args.value;
 
-  return {
+  return createFeedback({
     ok: true,
     data: args.field,
-  };
+  });
 };

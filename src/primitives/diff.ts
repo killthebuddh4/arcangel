@@ -1,15 +1,16 @@
 import { Field } from "../field/Field.js";
-import { Maybe } from "../Maybe.js";
+import { Feedback } from "../feedback/Feedback.js";
 import { compare } from "../field/compare.js";
+import { createFeedback } from "../feedback/createFeedback.js";
 
-export const diff = (args: { a: Field; b: Field }): Maybe<string> => {
+export const diff = (args: { a: Field; b: Field }): Feedback<string> => {
   const comparison = compare({ a: args.a, b: args.b });
 
   if (comparison.result === "equal") {
-    return {
+    return createFeedback({
       ok: true,
       data: "The fields are equal.",
-    };
+    });
   }
 
   if (comparison.result == "wrong dimensions") {
@@ -23,14 +24,14 @@ export const diff = (args: { a: Field; b: Field }): Maybe<string> => {
   const percentMismatch = (mismatches / size) * 100;
 
   if (percentMismatch > 50 || comparison.mismatches.length > 100) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `The fields are very different. ${percentMismatch}% of the points do not match.`,
-    };
+    });
   }
 
-  return {
+  return createFeedback({
     ok: false,
     reason: `The fields are somewhat different. ${percentMismatch}% of the points do not match. Here are the problematic points: ${JSON.stringify(comparison.mismatches)}`,
-  };
+  });
 };

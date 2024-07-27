@@ -1,23 +1,24 @@
 import { Field } from "./Field.js";
 import { Point } from "./Point.js";
-import { Maybe } from "../Maybe.js";
+import { Feedback } from "../feedback/Feedback.js";
+import { createFeedback } from "../feedback/createFeedback.js";
 
 export const create = (args: {
   height: number;
   width: number;
-}): Maybe<Field> => {
+}): Feedback<Field> => {
   if (args.height < 1) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected height to be greater than or equal to 1, but got ${args.height}`,
-    };
+    });
   }
 
   if (args.width < 1) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected width to be greater than or equal to 1, but got ${args.width}`,
-    };
+    });
   }
 
   const points: Point[][] = [];
@@ -34,12 +35,12 @@ export const create = (args: {
     }
   }
 
-  return {
+  return createFeedback({
     ok: true,
     data: {
       height: args.height,
       width: args.width,
       points,
     },
-  };
+  });
 };

@@ -1,8 +1,9 @@
 import { Field } from "../field/Field.js";
-import { Maybe } from "../Maybe.js";
+import { Feedback } from "../feedback/Feedback.js";
 import { read } from "../field/read.js";
 import { create } from "../field/create.js";
 import { write } from "../field/write.js";
+import { createFeedback } from "../feedback/createFeedback.js";
 
 export const crop = (args: {
   field: Field;
@@ -10,47 +11,47 @@ export const crop = (args: {
   y: number;
   height: number;
   width: number;
-}): Maybe<Field> => {
+}): Feedback<Field> => {
   if (args.height < 1) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected height to be greater than or equal to 1, but got ${args.height}`,
-    };
+    });
   }
 
   if (args.width < 1) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected width to be greater than or equal to 1, but got ${args.width}`,
-    };
+    });
   }
 
   if (args.x < 0) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected x to be greater than or equal to 0, but got ${args.x}`,
-    };
+    });
   }
 
   if (args.x + args.width > args.field.width) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected x + width to be less than or equal to the field width, but got x: ${args.x}, width: ${args.width}, field width: ${args.field.width}`,
-    };
+    });
   }
 
   if (args.y < 0) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected y to be greater than or equal to 0, but got ${args.y}`,
-    };
+    });
   }
 
   if (args.y + args.height > args.field.height) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `expected y + height to be less than or equal to the field height, but got y: ${args.y}, height: ${args.height}, field height: ${args.field.height}`,
-    };
+    });
   }
 
   const field = create({ height: args.height, width: args.width });
@@ -76,8 +77,8 @@ export const crop = (args: {
     }
   }
 
-  return {
+  return createFeedback({
     ok: true,
     data: field.data,
-  };
+  });
 };

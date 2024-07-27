@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { Maybe } from "../Maybe.js";
+import { Feedback } from "../feedback/Feedback.js";
+import { createFeedback } from "../feedback/createFeedback.js";
 import type { ChatCompletionTool } from "openai/src/resources/index.js";
 
 export const createTool = <
@@ -14,7 +15,7 @@ export const createTool = <
   handler: (args: z.infer<I>) => z.infer<O>;
 }): {
   spec: ChatCompletionTool;
-  tool: (generated: string) => Maybe<z.infer<O>>;
+  tool: (generated: string) => Feedback<z.infer<O>>;
 } => {
   return {
     spec: {
@@ -30,19 +31,19 @@ export const createTool = <
       try {
         json = JSON.parse(generated);
       } catch {
-        return {
+        return createFeedback({
           ok: false,
           reason: `Generated string was not valid JSON`,
-        };
+        });
       }
 
       const input = args.inputSchema.safeParse(json);
 
       if (!input.success) {
-        return {
+        return createFeedback({
           ok: false,
           reason: `Generated JSON did not match input schema`,
-        };
+        });
       }
 
       return args.handler(input.data);

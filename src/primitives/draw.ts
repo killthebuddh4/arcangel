@@ -1,10 +1,14 @@
 import { Field } from "../field/Field.js";
-import { Maybe } from "../Maybe.js";
+import { Feedback } from "../feedback/Feedback.js";
 import { write } from "../field/write.js";
 import { Point } from "../field/Point.js";
 import { clone } from "../field/clone.js";
+import { createFeedback } from "../feedback/createFeedback.js";
 
-export const draw = (args: { field: Field; points: Point[] }): Maybe<Field> => {
+export const draw = (args: {
+  field: Field;
+  points: Point[];
+}): Feedback<Field> => {
   const cloned = clone({ field: args.field });
 
   for (const point of args.points) {
@@ -22,8 +26,8 @@ export const draw = (args: { field: Field; points: Point[] }): Maybe<Field> => {
     }
   }
 
-  return {
+  return createFeedback({
     ok: true,
     data: cloned,
-  };
+  });
 };

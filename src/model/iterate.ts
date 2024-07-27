@@ -1,24 +1,25 @@
 import { Model } from "./Model.js";
 import { Operator } from "../operator/Operator.js";
 import { State } from "./State.js";
-import { Maybe } from "../Maybe.js";
+import { Feedback } from "../feedback/Feedback.js";
 import { v4 as uuidv4 } from "uuid";
 import { Transition } from "./Transition.js";
+import { createFeedback } from "../feedback/createFeedback.js";
 
 export const iterate = (args: {
   model: Model;
   operator: Operator;
   state: State;
-}): Maybe<Model> => {
+}): Feedback<Model> => {
   const isDefinedOperation = args.model.operators.some(
     (operator) => operator.id === args.operator.id,
   );
 
   if (!isDefinedOperation) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `operator ${args.operator.id} is not defined in the model`,
-    };
+    });
   }
 
   const isStateInModel = args.model.states.some(
@@ -26,10 +27,10 @@ export const iterate = (args: {
   );
 
   if (!isStateInModel) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `state ${args.state.id} is not in the model`,
-    };
+    });
   }
 
   const isOperationAlreadyApplied = args.state.downstream.some(
@@ -37,10 +38,10 @@ export const iterate = (args: {
   );
 
   if (isOperationAlreadyApplied) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `operator ${args.operator.id} has already been applied to state ${args.state.id}`,
-    };
+    });
   }
 
   const isOperationApplicable = args.operator.interface.upstream.every(
@@ -53,10 +54,10 @@ export const iterate = (args: {
   );
 
   if (!isOperationApplicable) {
-    return {
+    return createFeedback({
       ok: false,
       reason: `operator ${args.operator.id} is not applicable to state ${args.state.id}`,
-    };
+    });
   }
 
   const result = args.operator.implementation(args.state.field);
@@ -89,8 +90,8 @@ export const iterate = (args: {
   args.state.downstream.push(transition);
   state.upstream = transition;
 
-  return {
+  return createFeedback({
     ok: true,
     data: args.model,
-  };
+  });
 };
