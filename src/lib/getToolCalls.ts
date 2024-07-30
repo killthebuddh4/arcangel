@@ -1,30 +1,22 @@
-import { Feedback } from "../field/Feedback.js";
+import { ChatToolCall } from "../types/ChatToolCall.js";
+import { Maybe } from "../types/Maybe.js";
+import { createMaybe } from "./createMaybe.js";
 import type { ChatCompletion } from "openai/src/resources/index.js";
-import { createFeedback } from "../field/createFeedback.js";
-
-type GetToolCallsFeedbackCode = "NO_TOOL_CALLS";
 
 export const getToolCalls = (args: {
   completion: ChatCompletion;
-}): Feedback<
-  Array<{
-    id: string;
-    tool: string;
-    args: string;
-  }>,
-  GetToolCallsFeedbackCode
-> => {
+}): Maybe<ChatToolCall[]> => {
   const toolCalls = args.completion.choices[0].message.tool_calls;
 
   if (toolCalls === undefined) {
-    return createFeedback({
+    return createMaybe({
       ok: false,
       code: "NO_TOOL_CALLS",
       reason: "No tool calls found in completion",
     });
   }
 
-  const calls = [];
+  const calls: ChatToolCall[] = [];
 
   for (const call of toolCalls) {
     calls.push({
@@ -34,7 +26,7 @@ export const getToolCalls = (args: {
     });
   }
 
-  return createFeedback({
+  return createMaybe({
     ok: true,
     data: calls,
   });

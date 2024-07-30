@@ -1,7 +1,25 @@
-import { renderField } from "./createImage.js";
+import Jimp from "jimp";
+import { Maybe } from "../types/Maybe.js";
+import { createMaybe } from "./createMaybe.js";
 
-type I = Awaited<ReturnType<typeof renderField>>;
+export const writeImage = async (args: {
+  image: Jimp;
+  path: string;
+}): Promise<Maybe<{ writtenTo: string }>> => {
+  try {
+    await args.image.writeAsync(args.path);
+  } catch {
+    return createMaybe({
+      ok: false,
+      code: "WRITE_IMAGE_FAILED",
+      reason: "Failed to write image",
+    });
+  }
 
-export const save = async (args: { path: string; image: I }) => {
-  await args.image.image.writeAsync(args.path);
+  return createMaybe({
+    ok: true,
+    data: {
+      writtenTo: args.path,
+    },
+  });
 };

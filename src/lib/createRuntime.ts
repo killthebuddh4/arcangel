@@ -1,30 +1,26 @@
-import { Runtime } from "../types/Runtime.js";
-import { Transformation } from "../types/Transformation.js";
+import { Maybe } from "../types/Maybe.js";
+import { createMaybe } from "./createMaybe.js";
+import { v4 as uuidv4 } from "uuid";
+import { Operator } from "../types/Operator.js";
 import { Predicate } from "../types/Predicate.js";
 import { Relation } from "../types/Relation.js";
 import { Invariant } from "../types/Invariant.js";
-import { Operator } from "../types/Operator.js";
-import { v4 as uuidv4 } from "uuid";
-import { Field } from "../types/Field.js";
+import { Runtime } from "../types/Runtime.js";
 
 export const createRuntime = (args: {
-  input: Field;
-  transformation: Transformation;
+  operators: Operator[];
   predicates: Predicate[];
   relations: Relation[];
   invariants: Invariant[];
-  primitives: Operator[];
-}): Runtime => {
-  return {
-    id: uuidv4(),
-    input: args.input,
-    transformation: args.transformation,
-    states: [],
-    transitions: [],
-    faults: [],
-    operators: args.primitives,
-    predicates: args.predicates,
-    relations: args.relations,
-    invariants: args.invariants,
-  };
+}): Maybe<Runtime> => {
+  return createMaybe({
+    ok: true,
+    data: {
+      id: uuidv4(),
+      operators: args.operators,
+      predicates: args.predicates,
+      relations: args.relations,
+      invariants: args.invariants,
+    },
+  });
 };

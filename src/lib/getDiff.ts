@@ -1,52 +1,69 @@
-import { Field } from "../types/Field.js";
-import { getPoint } from "./getPoint.js";
-import { Feedback } from "../types/Feedback.js";
-import { createFeedback } from "./createFeedback.js";
+import { Maybe } from "../types/Maybe.js";
+import { createMaybe } from "./createMaybe.js";
+import { Grid } from "../types/Grid.js";
+import { Cell } from "../types/Cell.js";
+import { getCell } from "./getCell.js";
 
-export const diff = (args: {
-  lhs: Field;
-  rhs: Field;
-}): Feedback<{
-  mismatches: Array<{ x: number; y: number }>;
-}> => {
-  if (
-    args.lhs.width !== args.rhs.width ||
-    args.lhs.height !== args.rhs.height
-  ) {
-    return createFeedback({
+export const getDiff = (args: {
+  lhs: Grid;
+  rhs: Grid;
+}): Maybe<{ diff: Cell[] }> => {
+  if (args.lhs.height !== args.rhs.height) {
+    return createMaybe({
       ok: false,
-      code: "DIMENSION_MISMATCH",
-      reason: `expected dimensions to be equal, but got ${args.lhs.width}x${args.lhs.height} and ${args.rhs.width}x${args.rhs.height}`,
+      code: "GRID_HEIGHT_MISMATCH",
+      reason: `The grids have different heights: ${args.lhs.height} and ${args.rhs.height}.`,
     });
   }
 
-  const mismatches: Array<{ x: number; y: number }> = [];
+  if (args.lhs.width !== args.rhs.width) {
+    return createMaybe({
+      ok: false,
+      code: "GRID_WIDTH_MISMATCH",
+      reason: `The grids have different widths: ${args.lhs.width} and ${args.rhs.width}.`,
+    });
+  }
+
+  const diff: Cell[] = [];
 
   for (let y = 0; y < args.lhs.height; y++) {
     for (let x = 0; x < args.lhs.width; x++) {
-      const maybeLhsPoint = getPoint({ field: args.lhs, x, y });
+      const maybeLhsCell = getCell({
+        grid: args.lhs,
+        x,
+        y,
+      });
 
-      if (!maybeLhsPoint.ok) {
-        return maybeLhsPoint;
-      }
-
-      const maybeRhsPoint = getPoint({ field: args.rhs, x, y });
-
-      if (!maybeRhsPoint.ok) {
-        return maybeRhsPoint;
-      }
-
-      if (maybeLhsPoint.data.value !== maybeRhsPoint.data.value) {
-        mismatches.push({
-          x,
-          y,
+      if (!maybeLhsCell.ok) {
+        return createMaybe({
+          ok: false,
+          code: "GET_LHS_CELL_FAILED",
+          reason: maybeLhsCell,
         });
+      }
+
+      const maybeRhsCell = getCell({
+        grid: args.rhs,
+        x,
+        y,
+      });
+
+      if (!maybeRhsCell.ok) {
+        return createMaybe({
+          ok: false,
+          code: "GET_RHS_CELL_FAILED",
+          reason: maybeRhsCell,
+        });
+      }
+
+      if (maybeLhsCell.data.color !== maybeRhsCell.data.color) {
+        diff.push(maybeLhsCell.data);
       }
     }
   }
 
-  return createFeedback({
+  return createMaybe({
     ok: true,
-    data: { mismatches },
+    data: { diff },
   });
 };

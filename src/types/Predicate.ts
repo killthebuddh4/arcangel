@@ -1,8 +1,8 @@
-import { Field } from "./Field.js";
+import { Grid } from "./Grid.js";
 import { Observation } from "./Observation.js";
 
 export type Predicate = {
   id: string;
   description: string;
-  evaluate: (field: Field) => Observation;
+  implementation: (field: Grid) => Observation;
 };

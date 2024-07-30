@@ -1,33 +1,22 @@
 import { readdir } from "fs/promises";
 import { getConfig } from "./getConfig.js";
-import { Feedback } from "../types/Feedback.js";
-import { createFeedback } from "./createFeedback.js";
+import { createMaybe } from "./createMaybe.js";
+import { Maybe } from "../types/Maybe.js";
 
-const config = getConfig();
-
-export const readTaskIds = async (): Promise<Feedback<string[]>> => {
-  let files: string[];
-  try {
-    files = await readdir(config.TASKS_DIR);
-  } catch {
-    return createFeedback({
-      ok: false,
-      code: "DIRECTORY_READ_ERROR",
-      reason: `Failed to read tasks directory: ${config.TASKS_DIR}`,
-    });
-  }
+export const readTaskIds = async (): Promise<Maybe<string[]>> => {
+  const files = await readdir(getConfig().TASKS_DIR);
 
   for (const filename of files) {
     if (!filename.endsWith(".json")) {
-      return createFeedback({
+      return createMaybe({
         ok: false,
         code: "INVALID_FILE_EXTENSION",
-        reason: `Expected a JSON file, but got ${filename}.`,
+        reason: `Invalid file extension: ${filename}, expected .json`,
       });
     }
   }
 
-  return createFeedback({
+  return createMaybe({
     ok: true,
     data: files.map((filename) => filename.replace(".json", "")),
   });

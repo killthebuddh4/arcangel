@@ -1,22 +1,18 @@
 import { z } from "zod";
+import { createMaybe } from "./createMaybe.js";
+import { Maybe } from "../types/Maybe.js";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { getConfig } from "./getConfig.js";
-import { Feedback } from "../types/Feedback.js";
-import { taskSchema } from "./taskSchema.js";
-import { createFeedback } from "./createFeedback.js";
+import { Task } from "../types/Task.js";
 
-const config = getConfig();
-
-export const readTask = async (args: {
-  id: string;
-}): Promise<Feedback<z.infer<typeof taskSchema>>> => {
+export const readTask = async (args: { id: string }): Promise<Maybe<Task>> => {
   let content: string;
   try {
     const filename = `${args.id}.json`;
-    content = await readFile(join(config.TASKS_DIR, filename), "utf-8");
+    content = await readFile(join(getConfig().TASKS_DIR, filename), "utf-8");
   } catch {
-    return createFeedback({
+    return createMaybe({
       ok: false,
       code: "FILE_READ_ERROR",
       reason: `Failed to read task from disk for task id: ${args.id}`,
@@ -27,24 +23,39 @@ export const readTask = async (args: {
   try {
     json = JSON.parse(content);
   } catch {
-    return createFeedback({
+    return createMaybe({
       ok: false,
       code: "INVALID_JSON",
       reason: `Task with id ${args.id} is not a valid JSON file`,
     });
   }
 
-  const task = taskSchema.safeParse(json);
+  const task = z
+    .object({
+      train: z.array(
+        z.object({
+          input: z.array(z.array(z.number())),
+          output: z.array(z.array(z.number())),
+        }),
+      ),
+      test: z.array(
+        z.object({
+          input: z.array(z.array(z.number())),
+          output: z.array(z.array(z.number())),
+        }),
+      ),
+    })
+    .safeParse(json);
 
   if (!task.success) {
-    return createFeedback({
+    return createMaybe({
       ok: false,
       code: "SCHEMA_MISMATCH",
       reason: `Task with id ${args.id} does not match the expected schema`,
     });
   }
 
-  return createFeedback({
+  return createMaybe({
     ok: true,
     data: task.data,
   });

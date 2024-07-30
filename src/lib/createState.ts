@@ -1,22 +1,27 @@
-import { Transition } from "../types/Transition.js";
+import { Grid } from "../types/Grid.js";
 import { State } from "../types/State.js";
+import { Transition } from "../types/Transition.js";
+import { Predicate } from "../types/Predicate.js";
 import { Observation } from "../types/Observation.js";
 import { v4 as uuidv4 } from "uuid";
-import { Field } from "../types/Field.js";
-import { Predicate } from "../types/Predicate.js";
+import { Maybe } from "../types/Maybe.js";
+import { createMaybe } from "./createMaybe.js";
 
 export const createState = (args: {
-  field: Field;
-  data: Array<{ predicate: Predicate; observation: Observation }>;
-  upstream: Transition | null;
-  downstream: Transition[];
-}): State => {
-  return {
-    id: uuidv4(),
-    type: "state",
-    field: args.field,
-    data: args.data,
-    upstream: args.upstream,
-    downstream: args.downstream,
-  };
+  grid: Grid;
+  data?: Array<{ predicate: Predicate; observation: Observation }>;
+  upstream?: Transition;
+  downstream?: Transition[];
+}): Maybe<State> => {
+  return createMaybe({
+    ok: true,
+    data: {
+      id: uuidv4(),
+      type: "state",
+      grid: args.grid,
+      data: args.data ?? [],
+      upstream: args.upstream ?? null,
+      downstream: args.downstream ?? [],
+    },
+  });
 };

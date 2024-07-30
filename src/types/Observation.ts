@@ -1,9 +1,12 @@
 export type Observation =
   | {
+      id: string;
       isPositive: true;
-      notes?: string;
     }
   | {
+      id: string;
       isPositive: false;
-      notes: string;
+      code: string;
+      reason: string;
+      details?: unknown;
     };

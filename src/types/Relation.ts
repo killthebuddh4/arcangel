@@ -1,8 +1,8 @@
-import { Field } from "./Field.js";
+import { Grid } from "./Grid.js";
 import { Observation } from "./Observation.js";
 
 export type Relation = {
   id: string;
   description: string;
-  evaluate: (lhs: Field, rhs: Field) => Observation;
+  evaluate: (lhs: Grid, rhs: Grid) => Observation;
 };

@@ -1,9 +1,9 @@
-import { Field } from "./Field.js";
-import { Feedback } from "./Feedback.js";
+import { Grid } from "./Grid.js";
 
-export type Operator = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Operator<P = any> = {
   id: string;
   name: string;
   description: string;
-  implementation: (field: Field, params: unknown) => Feedback<Field>;
+  implementation: (grid: Grid, params: P) => Grid;
 };

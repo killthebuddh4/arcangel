@@ -1,87 +1,275 @@
+import { z } from "zod";
 import { readTask } from "./lib/readTask.js";
-import { getTaskIds } from "./lib/getTaskIds.js";
-import { getRgb } from "./lib/getRgb.js";
-import { createField as createField } from "./lib/createField.js";
-import { write as writeField } from "./lib/setPoint.js";
-import { isEqual } from "./lib/isSameField.js";
-import { isRotation180 } from "./lib/is180Rotation.js";
-import { isRotation270 } from "./lib/is270Rotation.js";
-import { isRotation90 } from "./lib/is90Rotation.js";
-import { isCropped } from "./lib/isCroppedVersion.js";
-import { renderField as renderField } from "./lib/createImage.js";
-import { save as saveField } from "./lib/writeImage.js";
+import { readTaskIds } from "./lib/readTaskIds.js";
+import { createGrid } from "./lib/createGrid.js";
+import { createCell } from "./lib/createCell.js";
+import { Cell } from "./types/Cell.js";
+import { getColor } from "./lib/getColor.js";
+import { createOperator } from "./lib/createOperator.js";
+import { Color } from "./types/Color.js";
+import { Maybe } from "./types/Maybe.js";
+import { createTool } from "./lib/createTool.js";
+import { parseColor } from "./lib/parseColor.js";
+import { createMaybe } from "./lib/createMaybe.js";
+import { getOpenAi } from "./lib/getOpenAi.js";
+import { getImage } from "./lib/getImage.js";
+import { ChatSystemMessage } from "./types/ChatSystemMessage.js";
+import { ChatImageMessage } from "./types/ChatImageMessage.js";
+import { getToolCalls } from "./lib/getToolCalls.js";
+import { writeImage } from "./lib/writeImage.js";
+import { getString } from "./lib/getString.js";
+import { Chalk } from "chalk";
+
+const chalk = new Chalk();
+
+const openai = getOpenAi();
 
 const main = async () => {
-  const taskIds = await getTaskIds();
+  const maybeTaskIds = await readTaskIds();
 
-  const tasks = await Promise.all(
-    taskIds.map((id) => {
-      return readTask({ id }).then((task) => {
-        if (!task.ok) {
-          throw new Error(task.reason);
-        }
+  if (!maybeTaskIds.ok) {
+    throw new Error(`Failed to read task ids: ${maybeTaskIds.reason}`);
+  }
 
-        return {
-          id,
-          data: task.data,
-        };
+  const taskId = Math.floor(Math.random() * maybeTaskIds.data.length);
+
+  const maybeTask = await readTask({ id: maybeTaskIds.data[taskId] });
+
+  if (!maybeTask.ok) {
+    throw new Error(`Failed to read task: ${maybeTask.reason}`);
+  }
+
+  const numbers = maybeTask.data.train[0].input;
+
+  const cells: Cell[][] = [];
+
+  for (let y = 0; y < numbers.length; y++) {
+    const row: Cell[] = [];
+
+    for (let x = 0; x < numbers[y].length; x++) {
+      const maybeColor = getColor({ code: numbers[y][x] });
+
+      if (!maybeColor.ok) {
+        throw new Error(`Failed to get color: ${maybeColor.reason}`);
+      }
+
+      const cell = createCell({
+        x,
+        y,
+        color: maybeColor.data,
       });
+
+      if (!cell.ok) {
+        throw new Error(`Failed to create cell: ${cell.reason}`);
+      }
+
+      row.push(cell.data);
+    }
+
+    cells.push(row);
+  }
+
+  const input = createGrid({
+    height: numbers.length,
+    width: numbers[0].length,
+    cells,
+  });
+
+  if (!input.ok) {
+    throw new Error(`Failed to create input grid: ${input.reason}`);
+  }
+
+  const inputImage = await getImage({ grid: input.data });
+
+  if (!inputImage.ok) {
+    throw new Error(`Failed to get image: ${inputImage.reason}`);
+  }
+
+  await writeImage({
+    image: inputImage.data.image,
+    path: `./data/images/arcangel-input.png`,
+  });
+
+  const workingGrid = createGrid({
+    height: input.data.height,
+    width: input.data.width,
+  });
+
+  if (!workingGrid.ok) {
+    throw new Error(`Failed to create working grid: ${workingGrid.reason}`);
+  }
+
+  const workingGridImage = await getImage({ grid: workingGrid.data });
+
+  if (!workingGridImage.ok) {
+    throw new Error(
+      `Failed to get working grid image: ${workingGridImage.reason}`,
+    );
+  }
+
+  await writeImage({
+    image: workingGridImage.data.image,
+    path: `./data/images/arcangel-working.png`,
+  });
+
+  const writeCellsOperator = createOperator({
+    name: "writeCellColor",
+    description: "Write the color of a cell to the grid.",
+    implementation: (grid, params: { x: number; y: number; color: Color }) => {
+      grid.cells[params.y][params.x].color = params.color;
+
+      return grid;
+    },
+  });
+
+  if (!writeCellsOperator.ok) {
+    throw new Error(
+      `Failed to create writeCells operator: ${writeCellsOperator.reason}`,
+    );
+  }
+
+  const maybeWriteCellsTool = createTool({
+    name: writeCellsOperator.data.name,
+    description: writeCellsOperator.data.description,
+    inputSchema: z.object({
+      x: z.number(),
+      y: z.number(),
+      color: z.string(),
     }),
-  );
+    outputSchema: z.object({
+      success: z.boolean(),
+    }),
+    handler: (params): Maybe<{ success: boolean }> => {
+      const maybeColor = parseColor({ color: params.color });
 
-  for (const task of tasks.slice(0, tasks.length)) {
-    const getField = (numbers: number[][]) => {
-      const height = numbers.length;
-      const width = numbers[0].length;
-      const field = createField({ height, width });
-
-      if (!field.ok) {
-        throw new Error(field.reason);
+      if (!maybeColor.ok) {
+        return createMaybe({
+          ok: false,
+          code: "COLOR_PARSE_FAILED",
+          reason: maybeColor,
+        });
       }
 
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const value = numbers[y][x];
+      writeCellsOperator.data.implementation(workingGrid.data, {
+        x: params.x,
+        y: params.y,
+        color: maybeColor.data,
+      });
 
-          writeField({
-            field: field.data,
-            x,
-            y,
-            value: getRgb({ color: value }),
-          });
-        }
+      return createMaybe({
+        ok: true,
+        data: { success: true },
+      });
+    },
+  });
+
+  if (!maybeWriteCellsTool.ok) {
+    throw new Error(
+      `Failed to create writeCells tool: ${maybeWriteCellsTool.reason}`,
+    );
+  }
+
+  const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. Each session is initialized with a target grid and a blank working grid. Your goal is to run commands until the working grid matches the target grid. Every command's output is a stringified version of the working grid. Every time a command exits, the shell's daemon will show you an image of the working grid.`;
+
+  const ITER_STATE = {
+    max: 100,
+    current: 0,
+    working: workingGrid.data,
+    numToolCalls: 0,
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
+      } as ChatSystemMessage,
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Here's an image of the target grid.",
+          },
+          {
+            type: "image_url",
+            image_url: { url: inputImage.data.dataUrl },
+          },
+        ],
+      } as ChatImageMessage,
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "And here's an image of the blank working grid.",
+          },
+          {
+            type: "image_url",
+            image_url: { url: workingGridImage.data.dataUrl },
+          },
+        ],
+      } as ChatImageMessage,
+    ],
+  };
+
+  while (ITER_STATE.current < ITER_STATE.max) {
+    ITER_STATE.current++;
+
+    const image = await getImage({ grid: ITER_STATE.working });
+
+    if (!image.ok) {
+      throw new Error(`Failed to get image: ${image.reason}`);
+    }
+
+    await writeImage({
+      image: image.data.image,
+      path: `./data/images/arcangel-${ITER_STATE.current}.png`,
+    });
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      tools: [maybeWriteCellsTool.data.spec],
+      messages: ITER_STATE.messages,
+    });
+
+    console.log(chalk.yellow(JSON.stringify(response, null, 2)));
+
+    // TODO get the correct type here.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ITER_STATE.messages.push(response.choices[0].message as any);
+
+    const toolCalls = getToolCalls({ completion: response });
+
+    if (!toolCalls.ok) {
+      throw new Error(`Failed to get tool calls: ${toolCalls.reason}`);
+    }
+
+    for (const toolCall of toolCalls.data) {
+      ITER_STATE.numToolCalls++;
+
+      if (toolCall.tool !== maybeWriteCellsTool.data.spec.function.name) {
+        throw new Error(`Invalid tool call: ${toolCall.tool}`);
       }
 
-      return field.data;
-    };
+      maybeWriteCellsTool.data.handler(toolCall.args);
 
-    const input = getField(task.data.train[0].input);
-    const inputRendered = await renderField({ field: input });
-    const output = getField(task.data.train[0].output);
-    const outputRendered = await renderField({ field: output });
-    const evaluation90 = isRotation90.evaluate(input, output);
-    const evaluation180 = isRotation180.evaluate(input, output);
-    const evaluation270 = isRotation270.evaluate(input, output);
-    const evaluation360 = isEqual.evaluate(input, output);
-    const evaluationCropped = isCropped.evaluate(input, output);
+      const image = await getImage({ grid: ITER_STATE.working });
 
-    if (
-      [
-        evaluation90,
-        evaluation180,
-        evaluation270,
-        evaluation360,
-        evaluationCropped,
-      ].some(({ isPositive }) => isPositive)
-    ) {
-      saveField({
-        image: inputRendered,
-        path: `./data/images/${task.id}-test-input.png`,
+      if (!image.ok) {
+        throw new Error(`Failed to get image: ${image.reason}`);
+      }
+
+      await writeImage({
+        image: image.data.image,
+        path: `./data/images/arcangel-after-${ITER_STATE.current}-${ITER_STATE.numToolCalls}.png`,
       });
-      saveField({
-        image: outputRendered,
-        path: `./data/images/${task.id}-test-output.png`,
-      });
+
+      ITER_STATE.messages.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        name: toolCall.tool,
+        content: getString({ grid: ITER_STATE.working }),
+        // TODO get the correct type here.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
     }
   }
 };

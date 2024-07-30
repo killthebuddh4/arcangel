@@ -1,8 +1,8 @@
-import { Field } from "./Field.js";
+import { Grid } from "./Grid.js";
 import { Observation } from "./Observation.js";
 
 export type Invariant = {
   id: string;
   description: string;
-  evaluate: (fields: Field[]) => Observation;
+  implementation: (grids: Grid[]) => Observation;
 };

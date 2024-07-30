@@ -1,4 +1,4 @@
-import { Field } from "./Field.js";
+import { Grid } from "./Grid.js";
 import { Observation } from "./Observation.js";
 import { Predicate } from "./Predicate.js";
 import { Relation } from "./Relation.js";
@@ -12,5 +12,5 @@ export type Transformation = {
     downstream: Array<{ predicate: Predicate; observation: Observation }>;
     transition: Array<{ relation: Relation; observation: Observation }>;
   };
-  input: Field;
+  input: Grid;
 };
