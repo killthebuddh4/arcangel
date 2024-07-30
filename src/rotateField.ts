@@ -1,6 +1,6 @@
-import { Field } from "./Field.js";
+import { Field } from "./types/Field.js";
 import { createField } from "./createField.js";
-import { read } from "./getPoint.js";
+import { getPoint } from "./getPoint.js";
 import { write } from "./setPoint.js";
 
 export const rotate = (args: { field: Field }): Field => {
@@ -15,7 +15,7 @@ export const rotate = (args: { field: Field }): Field => {
 
   for (let y = 0; y < args.field.height; y++) {
     for (let x = 0; x < args.field.width; x++) {
-      const point = read({ field: args.field, x, y });
+      const point = getPoint({ field: args.field, x, y });
 
       if (!point.ok) {
         throw new Error(point.reason);

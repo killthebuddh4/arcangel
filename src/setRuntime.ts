@@ -1,5 +1,5 @@
-import { Runtime } from "./Runtime.js";
-import { STORE } from "./store.js";
+import { Runtime } from "./types/Runtime.js";
+import { STORE } from "./getStore.js";
 
 export const setRuntime = (args: { runtime: Runtime }) => {
   if (STORE.runtime !== null) {

@@ -1,5 +1,5 @@
 import { getRuntime } from "./getRuntime.js";
-import { Fault } from "./Fault.js";
+import { Fault } from "./types/Fault.js";
 
 export const setFault = (args: { fault: Fault }) => {
   const runtime = getRuntime();

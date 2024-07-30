@@ -1,4 +1,4 @@
-import { Runtime } from "../field/Runtime.js";
+import { Runtime } from "./types/Runtime.js";
 
 export const exec = (args: {
   runtime: Runtime;

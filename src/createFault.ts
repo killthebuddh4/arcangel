@@ -1,6 +1,6 @@
-import { Transition } from "../runtime/Transition.js";
+import { Transition } from "./types/Transition.js";
 import { v4 as uuidv4 } from "uuid";
-import { Fault } from "./Fault.js";
+import { Fault } from "./types/Fault.js";
 
 export const createFault = (args: {
   code: string;

@@ -1,6 +1,6 @@
 import { createRelation } from "./createRelation.js";
-import { Observation } from "./Observation.js";
-import { Field } from "./Field.js";
+import { Observation } from "./types/Observation.js";
+import { Field } from "./types/Field.js";
 import { diff } from "./diffFields.js";
 import { crop } from "../field/crop.js";
 import { clone } from "../field/filter.js";

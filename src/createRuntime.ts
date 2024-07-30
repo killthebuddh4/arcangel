@@ -1,11 +1,11 @@
-import { Runtime } from "./Runtime.js";
-import { Transformation } from "./Transformation.js";
-import { Predicate } from "./Predicate.js";
+import { Runtime } from "./types/Runtime.js";
+import { Transformation } from "./types/Transformation.js";
+import { Predicate } from "./types/Predicate.js";
 import { Relation } from "./Relation.js";
-import { Invariant } from "./Invariant.js";
-import { Operator } from "./Operator.js";
+import { Invariant } from "./types/Invariant.js";
+import { Operator } from "./types/Operator.js";
 import { v4 as uuidv4 } from "uuid";
-import { Field } from "./Field.js";
+import { Field } from "./types/Field.js";
 
 export const createRuntime = (args: {
   input: Field;

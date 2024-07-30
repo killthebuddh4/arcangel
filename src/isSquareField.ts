@@ -1,6 +1,6 @@
-import { createPredicate } from "../field/createPredicate.js";
-import { Field } from "../field/Field.js";
-import { Observation } from "../field/Observation.js";
+import { createPredicate } from "./createPredicate.js";
+import { Field } from "./types/Field.js";
+import { Observation } from "./types/Observation.js";
 
 const id = "isSquare";
 

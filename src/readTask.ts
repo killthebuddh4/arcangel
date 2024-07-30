@@ -2,7 +2,7 @@ import { z } from "zod";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { config } from "./config.js";
-import { Feedback } from "./Feedback.js";
+import { Feedback } from "./types/Feedback.js";
 import { taskSchema } from "./taskSchema.js";
 import { createFeedback } from "./createFeedback.js";
 

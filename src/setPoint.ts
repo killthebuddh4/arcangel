@@ -1,4 +1,4 @@
-import { Field } from "./Field.js";
+import { Field } from "./types/Field.js";
 
 export const setPoint = (args: {
   field: Field;

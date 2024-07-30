@@ -1,15 +1,15 @@
-import { getTask } from "./field/readTask.js";
-import { getTaskIds } from "./field/getTaskIds.js";
-import { getRgb } from "./field/getRgb.js";
-import { createField as createField } from "./field/createField.js";
-import { write as writeField } from "./field/setPoint.js";
-import { isEqual } from "./field/isEqual.js";
-import { isRotation180 } from "./field/isRotation180.js";
-import { isRotation270 } from "./field/isRotation270.js";
-import { isRotation90 } from "./field/isRotation90.js";
-import { isCropped } from "./field/isCropped.js";
-import { renderField as renderField } from "./field/createImage.js";
-import { save as saveField } from "./field/writeImage.js";
+import { getTask } from "./readTask.js";
+import { getTaskIds } from "./getTaskIds.js";
+import { getRgb } from "./getRgb.js";
+import { createField as createField } from "./createField.js";
+import { write as writeField } from "./setPoint.js";
+import { isEqual } from "./isEqual.js";
+import { isRotation180 } from "./isRotation180.js";
+import { isRotation270 } from "./isRotation270.js";
+import { isRotation90 } from "./isRotation90.js";
+import { isCropped } from "./isCropped.js";
+import { renderField as renderField } from "./createImage.js";
+import { save as saveField } from "./writeImage.js";
 
 const main = async () => {
   const taskIds = await getTaskIds();

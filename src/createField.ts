@@ -1,5 +1,5 @@
-import { Field } from "./Field.js";
-import { Point } from "./Point.js";
+import { Field } from "./types/Field.js";
+import { Point } from "./types/Point.js";
 
 export const createField = (args: { height: number; width: number }): Field => {
   const field: Field = {

@@ -1,7 +1,7 @@
-import { Field } from "./Field.js";
-import { read } from "./getPoint.js";
+import { Field } from "./types/Field.js";
+import { getPoint } from "./getPoint.js";
 import { compareRgb } from "../field/compareRgb.js";
-import { Feedback } from "./Feedback.js";
+import { Feedback } from "./types/Feedback.js";
 import { getYs } from "../field/getYs.js";
 import { getXs } from "../field/getXs.js";
 import { createFeedback } from "./createFeedback.js";
@@ -27,8 +27,8 @@ export const diff = (args: {
 
   for (let y of getYs({ field: args.lhs })) {
     for (let x of getXs({ field: args.lhs })) {
-      const rgbA = read({ field: args.lhs, x, y });
-      const rgbB = read({ field: args.rhs, x, y });
+      const rgbA = getPoint({ field: args.lhs, x, y });
+      const rgbB = getPoint({ field: args.rhs, x, y });
 
       if (
         !compareRgb({

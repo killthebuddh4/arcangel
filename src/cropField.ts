@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { Field } from "./Field.js";
-import { Feedback } from "./Feedback.js";
-import { read } from "./getPoint.js";
+import { Field } from "./types/Field.js";
+import { Feedback } from "./types/Feedback.js";
+import { getPoint } from "./getPoint.js";
 import { createField } from "./createField.js";
 import { write } from "./setPoint.js";
 import { createFeedback } from "./createFeedback.js";
@@ -106,7 +106,7 @@ export const crop = (
         field: cropped,
         x: xCropped.data,
         y: yCropped.data,
-        value: read({ field: field, x, y }),
+        value: getPoint({ field: field, x, y }),
       });
     }
   }

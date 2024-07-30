@@ -1,9 +1,5 @@
-import { STORE } from "./store.js";
+import { getStore } from "./getStore.js";
 
 export const getRuntime = () => {
-  if (STORE.runtime === null) {
-    throw new Error("runtime is not defined");
-  }
-
-  return STORE.runtime;
+  return getStore().runtime;
 };

@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { Feedback } from "./Feedback.js";
+import { Feedback } from "./types/Feedback.js";
 
 type C<T> =
   | {

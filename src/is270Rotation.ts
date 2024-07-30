@@ -1,24 +1,25 @@
 import { createRelation } from "./createRelation.js";
-import { Observation } from "./Observation.js";
-import { Field } from "./Field.js";
+import { Observation } from "./types/Observation.js";
+import { Field } from "./types/Field.js";
 import { rotate } from "./rotateField.js";
 import { diff } from "./diffFields.js";
 
-const id = "isRotation180";
+const id = "isRotation270";
 
-const description = `The relation is satisfied if and only if the RHS field is a 180 degree rotation of the LHS.`;
+const description = `The relation is satisfied if and only if the RHS field is a 270 degree rotation of the LHS.`;
 
 const evaluate = (lhs: Field, rhs: Field): Observation => {
-  const isSameDimensions = lhs.height === rhs.height && lhs.width === rhs.width;
+  const isSwappedDimensions =
+    lhs.height === rhs.width && lhs.width === rhs.height;
 
-  if (!isSameDimensions) {
+  if (!isSwappedDimensions) {
     return {
       isPositive: false,
-      notes: `A 180 degree rotation will have the same dimensions. The LHS field has height: ${lhs.height}, width: ${lhs.width}, the RHS field has height: ${rhs.height}, width: ${rhs.width}.`,
+      notes: `A 270 degree rotation will have swapped dimensions. The LHS field has height: ${lhs.height}, width: ${lhs.width}, the RHS field has height: ${rhs.height}, width: ${rhs.width}.`,
     };
   }
 
-  const rotated = rotate({ field: rotate({ field: lhs }) });
+  const rotated = rotate({ field: rotate({ field: rotate({ field: lhs }) }) });
 
   const isRotatedComparison = diff({ lhs: rotated, rhs: rhs });
 
@@ -45,7 +46,7 @@ const evaluate = (lhs: Field, rhs: Field): Observation => {
   };
 };
 
-export const isRotation180 = createRelation({
+export const isRotation270 = createRelation({
   id,
   description,
   evaluate,

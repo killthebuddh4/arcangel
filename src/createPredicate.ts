@@ -1,6 +1,6 @@
-import { Field } from "./Field.js";
-import { Predicate } from "./Predicate.js";
-import { Observation } from "./Observation.js";
+import { Field } from "./types/Field.js";
+import { Predicate } from "./types/Predicate.js";
+import { Observation } from "./types/Observation.js";
 
 export const createPredicate = (args: {
   id: string;
