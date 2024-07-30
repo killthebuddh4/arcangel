@@ -1,15 +1,15 @@
-import { getTask } from "./task/getTask.js";
-import { getTaskIds } from "./task/getTaskIds.js";
-import { getRgb } from "./task/getRgb.js";
-import { create as createField } from "./field/create.js";
-import { write as writeField } from "./field/write.js";
-import { isEqual } from "./relations/isEqual.js";
-import { isRotation180 } from "./relations/isRotation180.js";
-import { isRotation270 } from "./relations/isRotation270.js";
-import { isRotation90 } from "./relations/isRotation90.js";
-import { isCropped } from "./relations/isCropped.js";
-import { render as renderField } from "./field/render.js";
-import { save as saveField } from "./field/save.js";
+import { getTask } from "./field/readTask.js";
+import { getTaskIds } from "./field/getTaskIds.js";
+import { getRgb } from "./field/getRgb.js";
+import { createField as createField } from "./field/createField.js";
+import { write as writeField } from "./field/setPoint.js";
+import { isEqual } from "./field/isEqual.js";
+import { isRotation180 } from "./field/isRotation180.js";
+import { isRotation270 } from "./field/isRotation270.js";
+import { isRotation90 } from "./field/isRotation90.js";
+import { isCropped } from "./field/isCropped.js";
+import { renderField as renderField } from "./field/createImage.js";
+import { save as saveField } from "./field/writeImage.js";
 
 const main = async () => {
   const taskIds = await getTaskIds();
