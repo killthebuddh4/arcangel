@@ -16,6 +16,48 @@ export const getImage = async (args: {
   const xOffset = (I_SIZE - args.grid.width * CELL_SIZE) / 2;
   const yOffset = (I_SIZE - args.grid.height * CELL_SIZE) / 2;
 
+  for (
+    let x = xOffset;
+    x < xOffset + args.grid.width * CELL_SIZE;
+    x += CELL_SIZE
+  ) {
+    const font = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
+
+    image.print(
+      font,
+      x,
+      yOffset - 16,
+      {
+        text: String(Math.floor((x - xOffset) / CELL_SIZE)),
+        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
+      },
+      CELL_SIZE,
+      CELL_SIZE,
+    );
+  }
+
+  for (
+    let y = yOffset;
+    y < yOffset + args.grid.height * CELL_SIZE;
+    y += CELL_SIZE
+  ) {
+    const font = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
+
+    image.print(
+      font,
+      xOffset - 16,
+      y,
+      {
+        text: String(Math.floor((y - yOffset) / CELL_SIZE)),
+        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
+      },
+      CELL_SIZE,
+      CELL_SIZE,
+    );
+  }
+
   for (let y = 0; y < args.grid.height; y++) {
     for (let x = 0; x < args.grid.width; x++) {
       const maybeCell = getCell({

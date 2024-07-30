@@ -25,6 +25,7 @@ export const createSession = (args: {
       workingGrid: args.workingGrid,
       messages: [],
       tools: args.tools,
+      outputGrid: null,
     },
   });
 };

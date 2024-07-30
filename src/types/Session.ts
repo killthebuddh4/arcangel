@@ -13,4 +13,5 @@ export type Session = {
   messages: ChatMessage[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools: Tool<any>[];
+  outputGrid: Grid | null;
 };
