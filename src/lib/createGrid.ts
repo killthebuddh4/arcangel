@@ -4,10 +4,12 @@ import { Cell } from "../types/Cell.js";
 import { parseHeight } from "./parseHeight.js";
 import { createMaybe } from "./createMaybe.js";
 import { createCell } from "./createCell.js";
+import { Color } from "../types/Color.js";
 
 export const createGrid = (args: {
   height: number;
   width: number;
+  color?: Color;
   cells?: Cell[][];
 }): Maybe<Grid> => {
   const maybeHeight = parseHeight({ n: args.height });
@@ -79,7 +81,7 @@ export const createGrid = (args: {
       if (args.cells !== undefined) {
         row.push(args.cells[y][x]);
       } else {
-        const cell = createCell({ x, y, color: "black" });
+        const cell = createCell({ x, y, color: args.color ?? "black" });
 
         if (!cell.ok) {
           return createMaybe({

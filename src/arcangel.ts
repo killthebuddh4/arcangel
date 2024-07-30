@@ -16,7 +16,6 @@ import { writeImage } from "./lib/writeImage.js";
 import { getString } from "./lib/getString.js";
 import { createChatToolResponseMessage } from "./lib/createChatToolResponseMessage.js";
 import { createSession } from "./lib/createSession.js";
-import { getMicroSolidGrid } from "./helpers/getMicroSolidGrids.js";
 import { getMaybeString } from "./lib/getMaybeString.js";
 import { setCellColor } from "./lib/setCellColor.js";
 import { Chalk } from "chalk";
@@ -26,7 +25,11 @@ const chalk = new Chalk();
 const openai = getOpenAi();
 
 const main = async () => {
-  const input = getMicroSolidGrid({ color: "red" });
+  const input = createGrid({
+    height: 4,
+    width: 4,
+    color: "red",
+  });
 
   if (!input.ok) {
     throw new Error(`Failed to create input grid: ${input.reason}`);
@@ -142,9 +145,61 @@ const main = async () => {
 
   const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. The cells are zero-indexed! Each session is initialized with a target grid and a blank working grid. Your goal is to run commands until the user's request has been satisfied. Every command's output is a stringified version of the working grid. Every time a command exits, the shell's daemon will show you an image of the working grid.`;
 
+  const exampleGridBlue = createGrid({
+    height: 8,
+    width: 8,
+    color: "blue",
+  });
+
+  if (!exampleGridBlue.ok) {
+    throw new Error(`Failed to create example grid: ${exampleGridBlue.reason}`);
+  }
+
+  const exampleGridBlueImage = await getImage({ grid: exampleGridBlue.data });
+
+  if (!exampleGridBlueImage.ok) {
+    throw new Error(`Failed to get image: ${exampleGridBlueImage.reason}`);
+  }
+
+  const exampleGridPurple = createGrid({
+    height: 5,
+    width: 5,
+    color: "purple",
+  });
+
+  if (!exampleGridPurple.ok) {
+    throw new Error(
+      `Failed to create example grid: ${exampleGridPurple.reason}`,
+    );
+  }
+
+  const exampleGridPurpleImage = await getImage({
+    grid: exampleGridPurple.data,
+  });
+
+  if (!exampleGridPurpleImage.ok) {
+    throw new Error(`Failed to get image: ${exampleGridPurpleImage.reason}`);
+  }
+
   const maybeMessages = [
     createChatSystemMessage({
       content: systemPrompt,
+    }),
+    createChatImageMessage({
+      text: "Here's an image of an example target grid.",
+      dataUrl: exampleGridBlueImage.data.dataUrl,
+    }),
+    createChatImageMessage({
+      text: "And here's an image of the corresponding completed working grid.",
+      dataUrl: exampleGridBlueImage.data.dataUrl,
+    }),
+    createChatImageMessage({
+      text: "Here's an image of another example target grid.",
+      dataUrl: exampleGridPurpleImage.data.dataUrl,
+    }),
+    createChatImageMessage({
+      text: "And here's an image of the corresponding completed working grid.",
+      dataUrl: exampleGridPurpleImage.data.dataUrl,
     }),
     createChatImageMessage({
       text: "Here's an image of the target grid.",
