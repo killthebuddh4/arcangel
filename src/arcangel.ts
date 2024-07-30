@@ -1,22 +1,22 @@
-import { getTask } from "./readTask.js";
-import { getTaskIds } from "./getTaskIds.js";
-import { getRgb } from "./getRgb.js";
-import { createField as createField } from "./createField.js";
-import { write as writeField } from "./setPoint.js";
-import { isEqual } from "./isEqual.js";
-import { isRotation180 } from "./isRotation180.js";
-import { isRotation270 } from "./isRotation270.js";
-import { isRotation90 } from "./isRotation90.js";
-import { isCropped } from "./isCropped.js";
-import { renderField as renderField } from "./createImage.js";
-import { save as saveField } from "./writeImage.js";
+import { readTask } from "./lib/readTask.js";
+import { getTaskIds } from "./lib/getTaskIds.js";
+import { getRgb } from "./lib/getRgb.js";
+import { createField as createField } from "./lib/createField.js";
+import { write as writeField } from "./lib/setPoint.js";
+import { isEqual } from "./lib/isSameField.js";
+import { isRotation180 } from "./lib/is180Rotation.js";
+import { isRotation270 } from "./lib/is270Rotation.js";
+import { isRotation90 } from "./lib/is90Rotation.js";
+import { isCropped } from "./lib/isCroppedVersion.js";
+import { renderField as renderField } from "./lib/createImage.js";
+import { save as saveField } from "./lib/writeImage.js";
 
 const main = async () => {
   const taskIds = await getTaskIds();
 
   const tasks = await Promise.all(
     taskIds.map((id) => {
-      return getTask({ id }).then((task) => {
+      return readTask({ id }).then((task) => {
         if (!task.ok) {
           throw new Error(task.reason);
         }
