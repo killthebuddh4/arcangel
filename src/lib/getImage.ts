@@ -59,21 +59,14 @@ export const getImage = async (args: {
 
   for (let y = 0; y < args.grid.height; y++) {
     for (let x = 0; x < args.grid.width; x++) {
-      const maybeCell = getCell({
+      const cell = getCell({
         grid: args.grid,
         x,
         y,
       });
 
-      if (!maybeCell.ok) {
-        throw createException({
-          code: "GET_CELL_FAILED",
-          reason: "TODO",
-        });
-      }
-
       const rgb = getRgb({
-        color: maybeCell.data.color,
+        color: cell.color,
       });
 
       if (!rgb.ok) {

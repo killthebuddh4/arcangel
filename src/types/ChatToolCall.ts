@@ -1,5 +1,8 @@
 export type ChatToolCall = {
   id: string;
-  tool: string;
-  args: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
 };

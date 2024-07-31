@@ -17,18 +17,10 @@ export const setCellColor = (args: {
     y: args.y,
   });
 
-  if (!cell.ok) {
-    return createMaybe({
-      ok: false,
-      code: "GET_CELL_FAILED",
-      reason: cell,
-    });
-  }
-
-  cell.data.color = args.color;
+  cell.color = args.color;
 
   return createMaybe({
     ok: true,
-    data: cell.data,
+    data: cell,
   });
 };

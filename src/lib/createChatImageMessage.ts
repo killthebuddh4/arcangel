@@ -13,7 +13,7 @@ export const createChatImageMessage = (args: {
       },
       {
         type: "image_url",
-        image_url: { url: args.dataUrl },
+        image_url: { url: args.dataUrl, detail: "low" },
       },
     ],
   };

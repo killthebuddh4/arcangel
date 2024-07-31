@@ -7,7 +7,7 @@ export type ChatImageMessage = {
     },
     {
       type: "image_url";
-      image_url: { url: string };
+      image_url: { url: string; detail: "low" | "high" };
     },
   ];
 };

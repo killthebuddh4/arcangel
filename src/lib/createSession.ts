@@ -12,7 +12,7 @@ export const createSession = (args: {
   tools: Tool<any>[];
 }): Session => {
   return {
-    id: uuidv4(),
+    id: `${Date.now()}-${uuidv4()}`,
     taskId: args.taskId,
     maxIterations: args.maxIterations,
     currentIteration: 0,
