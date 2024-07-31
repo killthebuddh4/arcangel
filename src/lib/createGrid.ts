@@ -1,41 +1,37 @@
-import { Maybe } from "../types/Maybe.js";
 import { Grid } from "../types/Grid.js";
 import { Cell } from "../types/Cell.js";
 import { parseHeight } from "./parseHeight.js";
-import { createMaybe } from "./createMaybe.js";
 import { createCell } from "./createCell.js";
 import { Color } from "../types/Color.js";
+import { createException } from "./createException.js";
 
 export const createGrid = (args: {
   height: number;
   width: number;
   color?: Color;
   cells?: Cell[][];
-}): Maybe<Grid> => {
+}): Grid => {
   const maybeHeight = parseHeight({ n: args.height });
 
   if (!maybeHeight.ok) {
-    return createMaybe({
-      ok: false,
+    throw createException({
       code: "HEIGHT_ARG_INVALID",
-      reason: maybeHeight,
+      reason: "TODO",
     });
   }
 
   const maybeWidth = parseHeight({ n: args.width });
 
   if (!maybeWidth.ok) {
-    return createMaybe({
-      ok: false,
+    throw createException({
       code: "WIDTH_ARG_INVALID",
-      reason: maybeWidth,
+      reason: "TODO",
     });
   }
 
   if (args.cells !== undefined) {
     if (args.cells.length !== maybeHeight.data) {
-      return createMaybe({
-        ok: false,
+      throw createException({
         code: "CELLS_HEIGHT_MISMATCH",
         reason: `The height of the cells array ${args.cells.length} does not match the height ${maybeHeight.data}.`,
       });
@@ -43,8 +39,7 @@ export const createGrid = (args: {
 
     for (let y = 0; y < maybeHeight.data; y++) {
       if (args.cells[y].length !== maybeWidth.data) {
-        return createMaybe({
-          ok: false,
+        throw createException({
           code: "CELLS_WIDTH_MISMATCH",
           reason: `The width of the cells array at index ${y} does not match the width ${maybeWidth.data}. Got ${args.cells[y].length} instead.`,
         });
@@ -54,16 +49,14 @@ export const createGrid = (args: {
         const cell = args.cells[y][x];
 
         if (cell.x !== x) {
-          return createMaybe({
-            ok: false,
+          throw createException({
             code: "CELL_X_MISMATCH",
             reason: `The x-coordinate of the cell at index ${y},${x} does not match the expected value of ${x}. Got ${cell.x} instead.`,
           });
         }
 
         if (cell.y !== y) {
-          return createMaybe({
-            ok: false,
+          throw createException({
             code: "CELL_Y_MISMATCH",
             reason: `The y-coordinate of the cell at index ${y},${x} does not match the expected value of ${y}. Got ${cell.y} instead.`,
           });
@@ -84,10 +77,9 @@ export const createGrid = (args: {
         const cell = createCell({ x, y, color: args.color ?? "black" });
 
         if (!cell.ok) {
-          return createMaybe({
-            ok: false,
+          throw createException({
             code: "CREATE_CELL_FAILED",
-            reason: cell,
+            reason: "TODO",
           });
         }
 
@@ -98,12 +90,9 @@ export const createGrid = (args: {
     cells.push(row);
   }
 
-  return createMaybe({
-    ok: true,
-    data: {
-      height: maybeHeight.data,
-      width: maybeWidth.data,
-      cells,
-    },
-  });
+  return {
+    height: maybeHeight.data,
+    width: maybeWidth.data,
+    cells,
+  };
 };

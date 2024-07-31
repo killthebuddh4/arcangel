@@ -3,6 +3,7 @@ export type Maybe<T> =
       id: string;
       ok: true;
       data: T;
+      reason?: undefined;
     }
   | {
       id: string;

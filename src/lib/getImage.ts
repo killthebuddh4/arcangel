@@ -1,16 +1,15 @@
 import Jimp from "jimp";
-import { Maybe } from "../types/Maybe.js";
 import { Grid } from "../types/Grid.js";
 import { getCell } from "./getCell.js";
 import { getRgb } from "./getRgb.js";
-import { createMaybe } from "./createMaybe.js";
+import { createException } from "./createException.js";
 
 const CELL_SIZE = 10;
 const I_SIZE = 512;
 
 export const getImage = async (args: {
   grid: Grid;
-}): Promise<Maybe<{ image: Jimp; dataUrl: string }>> => {
+}): Promise<{ image: Jimp; dataUrl: string }> => {
   const image = new Jimp(I_SIZE, I_SIZE, "white");
 
   const xOffset = (I_SIZE - args.grid.width * CELL_SIZE) / 2;
@@ -67,10 +66,9 @@ export const getImage = async (args: {
       });
 
       if (!maybeCell.ok) {
-        return createMaybe({
-          ok: false,
+        throw createException({
           code: "GET_CELL_FAILED",
-          reason: maybeCell,
+          reason: "TODO",
         });
       }
 
@@ -79,10 +77,9 @@ export const getImage = async (args: {
       });
 
       if (!rgb.ok) {
-        return createMaybe({
-          ok: false,
+        throw createException({
           code: "GET_RGB_FAILED",
-          reason: rgb,
+          reason: "TODO",
         });
       }
 
@@ -101,11 +98,8 @@ export const getImage = async (args: {
     }
   }
 
-  return createMaybe({
-    ok: true,
-    data: {
-      image,
-      dataUrl: await image.getBase64Async(Jimp.MIME_PNG),
-    },
-  });
+  return {
+    image,
+    dataUrl: await image.getBase64Async(Jimp.MIME_PNG),
+  };
 };

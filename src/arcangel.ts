@@ -9,7 +9,6 @@ import { createMaybe } from "./lib/createMaybe.js";
 import { getOpenAi } from "./lib/getOpenAi.js";
 import { getImage } from "./lib/getImage.js";
 import { createChatSystemMessage } from "./lib/createChatSystemMessage.js";
-import { ChatMessage } from "./types/ChatMessage.js";
 import { createChatImageMessage } from "./lib/createChatImageMessage.js";
 import { getToolCalls } from "./lib/getToolCalls.js";
 import { writeImage } from "./lib/writeImage.js";
@@ -18,9 +17,6 @@ import { createChatToolResponseMessage } from "./lib/createChatToolResponseMessa
 import { createSession } from "./lib/createSession.js";
 import { getMaybeString } from "./lib/getMaybeString.js";
 import { setCellColor } from "./lib/setCellColor.js";
-import { Chalk } from "chalk";
-
-const chalk = new Chalk();
 
 const openai = getOpenAi();
 
@@ -31,40 +27,22 @@ const main = async () => {
     color: "red",
   });
 
-  if (!input.ok) {
-    throw new Error(`Failed to create input grid: ${input.reason}`);
-  }
-
-  const inputImage = await getImage({ grid: input.data });
-
-  if (!inputImage.ok) {
-    throw new Error(`Failed to get image: ${inputImage.reason}`);
-  }
+  const inputImage = await getImage({ grid: input });
 
   await writeImage({
-    image: inputImage.data.image,
+    image: inputImage.image,
     path: `./data/images/arcangel-input.png`,
   });
 
   const workingGrid = createGrid({
-    height: input.data.height,
-    width: input.data.width,
+    height: input.height,
+    width: input.width,
   });
 
-  if (!workingGrid.ok) {
-    throw new Error(`Failed to create working grid: ${workingGrid.reason}`);
-  }
-
-  const workingGridImage = await getImage({ grid: workingGrid.data });
-
-  if (!workingGridImage.ok) {
-    throw new Error(
-      `Failed to get working grid image: ${workingGridImage.reason}`,
-    );
-  }
+  const workingGridImage = await getImage({ grid: workingGrid });
 
   await writeImage({
-    image: workingGridImage.data.image,
+    image: workingGridImage.image,
     path: `./data/images/arcangel-working.png`,
   });
 
@@ -109,11 +87,6 @@ const main = async () => {
       success: z.boolean(),
     }),
     handler: (params): Maybe<{ success: boolean }> => {
-      console.log(
-        "TOOL CALLED WITH PARAMS",
-        chalk.yellow(JSON.stringify(params, null, 2)),
-      );
-
       const maybeColor = parseColor({ color: params.color });
 
       if (!maybeColor.ok) {
@@ -124,7 +97,7 @@ const main = async () => {
         });
       }
 
-      writeCellsOperator.data.implementation(workingGrid.data, {
+      writeCellsOperator.data.implementation(workingGrid, {
         x: params.x,
         y: params.y,
         color: maybeColor.data,
@@ -151,15 +124,7 @@ const main = async () => {
     color: "blue",
   });
 
-  if (!exampleGridBlue.ok) {
-    throw new Error(`Failed to create example grid: ${exampleGridBlue.reason}`);
-  }
-
-  const exampleGridBlueImage = await getImage({ grid: exampleGridBlue.data });
-
-  if (!exampleGridBlueImage.ok) {
-    throw new Error(`Failed to get image: ${exampleGridBlueImage.reason}`);
-  }
+  const exampleGridBlueImage = await getImage({ grid: exampleGridBlue });
 
   const exampleGridPurple = createGrid({
     height: 5,
@@ -167,111 +132,69 @@ const main = async () => {
     color: "purple",
   });
 
-  if (!exampleGridPurple.ok) {
-    throw new Error(
-      `Failed to create example grid: ${exampleGridPurple.reason}`,
-    );
-  }
-
   const exampleGridPurpleImage = await getImage({
-    grid: exampleGridPurple.data,
+    grid: exampleGridPurple,
   });
 
-  if (!exampleGridPurpleImage.ok) {
-    throw new Error(`Failed to get image: ${exampleGridPurpleImage.reason}`);
-  }
-
-  const maybeMessages = [
+  const messages = [
     createChatSystemMessage({
       content: systemPrompt,
     }),
     createChatImageMessage({
       text: "Here's an image of an example target grid.",
-      dataUrl: exampleGridBlueImage.data.dataUrl,
+      dataUrl: exampleGridBlueImage.dataUrl,
     }),
     createChatImageMessage({
       text: "And here's an image of the corresponding completed working grid.",
-      dataUrl: exampleGridBlueImage.data.dataUrl,
+      dataUrl: exampleGridBlueImage.dataUrl,
     }),
     createChatImageMessage({
       text: "Here's an image of another example target grid.",
-      dataUrl: exampleGridPurpleImage.data.dataUrl,
+      dataUrl: exampleGridPurpleImage.dataUrl,
     }),
     createChatImageMessage({
       text: "And here's an image of the corresponding completed working grid.",
-      dataUrl: exampleGridPurpleImage.data.dataUrl,
+      dataUrl: exampleGridPurpleImage.dataUrl,
     }),
     createChatImageMessage({
       text: "Here's an image of the target grid.",
-      dataUrl: inputImage.data.dataUrl,
+      dataUrl: inputImage.dataUrl,
     }),
     createChatImageMessage({
       text: "And here's an image of the blank working grid.",
-      dataUrl: workingGridImage.data.dataUrl,
+      dataUrl: workingGridImage.dataUrl,
     }),
   ];
-
-  const messages: ChatMessage[] = [];
-
-  for (const maybeMessage of maybeMessages) {
-    if (!maybeMessage.ok) {
-      throw new Error(`Failed to create message: ${maybeMessage.reason}`);
-    }
-
-    messages.push(maybeMessage.data);
-  }
 
   const session = createSession({
     taskId: "micro-solid-grids",
     maxIterations: 100,
-    targetGrid: input.data,
-    workingGrid: workingGrid.data,
+    targetGrid: input,
+    workingGrid: workingGrid,
     tools: [maybeWriteCellsTool.data],
   });
 
-  if (!session.ok) {
-    throw new Error(`Failed to create session: ${session.reason}`);
-  }
+  session.messages.push(...messages);
 
-  session.data.messages.push(...messages);
+  while (session.currentIteration < session.maxIterations) {
+    session.currentIteration++;
 
-  const getWorkingGridImage = async () => {
-    const maybeImage = await getImage({ grid: session.data.workingGrid });
-
-    if (!maybeImage.ok) {
-      throw new Error(`Failed to get image: ${maybeImage.reason}`);
-    }
-
-    return maybeImage.data;
-  };
-
-  const writeWorkingGrid = async () => {
-    const image = await getImage({ grid: session.data.workingGrid });
-
-    if (!image.ok) {
-      throw new Error(`Failed to get image: ${image.reason}`);
-    }
+    const workingGridImage = await getImage({ grid: session.workingGrid });
 
     await writeImage({
-      image: image.data.image,
-      path: `./data/images/arcangel-${session.data.currentIteration}-after-${session.data.numToolCalls}.png`,
+      image: workingGridImage.image,
+      path: `./data/images/arcangel-${session.currentIteration}-after-${session.numToolCalls}.png`,
     });
-  };
-
-  while (session.data.currentIteration < session.data.maxIterations) {
-    session.data.currentIteration++;
-
-    await writeWorkingGrid();
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      tools: session.data.tools.map((tool) => tool.spec),
-      messages: session.data.messages,
+      tools: session.tools.map((tool) => tool.spec),
+      messages: session.messages,
     });
 
     // TODO get the correct type here.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    session.data.messages.push(response.choices[0].message as any);
+    session.messages.push(response.choices[0].message as any);
 
     const toolCalls = getToolCalls({ completion: response });
 
@@ -280,7 +203,7 @@ const main = async () => {
     }
 
     for (const toolCall of toolCalls.data) {
-      session.data.numToolCalls++;
+      session.numToolCalls++;
 
       if (toolCall.tool !== maybeWriteCellsTool.data.spec.function.name) {
         throw new Error(`Invalid tool call: ${toolCall.tool}`);
@@ -288,37 +211,32 @@ const main = async () => {
 
       maybeWriteCellsTool.data.handler(toolCall.args);
 
-      const maybeToolResponseMessage = createChatToolResponseMessage({
-        toolCallId: toolCall.id,
-        name: toolCall.tool,
-        content: getString({ grid: session.data.workingGrid }),
-      });
-
-      if (!maybeToolResponseMessage.ok) {
-        throw new Error(
-          `Failed to create tool response message: ${maybeToolResponseMessage.reason}`,
-        );
-      }
-
-      session.data.messages.push(maybeToolResponseMessage.data);
-    }
-
-    await writeWorkingGrid();
-
-    const image = await getWorkingGridImage();
-
-    const maybeImageMessage = createChatImageMessage({
-      text: "Here's the most recent image of the working grid.",
-      dataUrl: image.dataUrl,
-    });
-
-    if (!maybeImageMessage.ok) {
-      throw new Error(
-        `Failed to create image message: ${maybeImageMessage.reason}`,
+      session.messages.push(
+        createChatToolResponseMessage({
+          toolCallId: toolCall.id,
+          name: toolCall.tool,
+          content: getString({ grid: session.workingGrid }),
+        }),
       );
     }
 
-    session.data.messages.push(maybeImageMessage.data);
+    const resultWorkingGridImage = await getImage({
+      grid: session.workingGrid,
+    });
+
+    await writeImage({
+      image: resultWorkingGridImage.image,
+      path: `./data/images/arcangel-${session.currentIteration}-after-${session.numToolCalls}.png`,
+    });
+
+    const image = await getImage({ grid: session.workingGrid });
+
+    session.messages.push(
+      createChatImageMessage({
+        text: "Here's the most recent image of the working grid.",
+        dataUrl: image.dataUrl,
+      }),
+    );
   }
 };
 
