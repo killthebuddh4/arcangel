@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { createGrid } from "./lib/createGrid.js";
-import { createOperator } from "./lib/createOperator.js";
-import { Color } from "./types/Color.js";
 import { createTool } from "./lib/createTool.js";
-import { parseColor } from "./lib/parseColor.js";
 import { getOpenAi } from "./lib/getOpenAi.js";
 import { getImage } from "./lib/getImage.js";
 import { createChatSystemMessage } from "./lib/createChatSystemMessage.js";
@@ -17,7 +14,6 @@ import { setCellColor } from "./lib/setCellColor.js";
 import { createChatToolCallMessage } from "./lib/createChatToolCallMessage.js";
 import { getWorkingGridPath } from "./lib/getWorkingGridPath.js";
 import { getInputGridPath } from "./lib/getInputGridPath.js";
-import { createException } from "./lib/createException.js";
 import { Chalk } from "chalk";
 import { getDiff } from "./lib/getDiff.js";
 import { createExperiment } from "./lib/createExperiment.js";
@@ -45,46 +41,22 @@ const main = async () => {
     width: input.width,
   });
 
-  const writeCellsOperator = createOperator({
-    name: "writeCellColor",
-    description: "Write the color of a cell to the grid.",
-    implementation: (grid, params: { x: number; y: number; color: Color }) => {
-      setCellColor({
-        grid,
-        x: params.x,
-        y: params.y,
-        color: params.color,
-      });
-
-      return grid;
-    },
-  });
-
-  const writeCellsTool = createTool({
-    name: writeCellsOperator.name,
-    description: writeCellsOperator.description,
+  const setColorRedTool = createTool({
+    name: "setColorRed",
+    description: "Sets the color of the target cell to red.",
     inputSchema: z.object({
       x: z.number(),
       y: z.number(),
-      color: z.string(),
     }),
     outputSchema: z.object({
       success: z.boolean(),
     }),
     handler: (params): { success: boolean } => {
-      const maybeColor = parseColor({ color: params.color });
-
-      if (!maybeColor.ok) {
-        throw createException({
-          code: "COLOR_PARSE_FAILED",
-          reason: `Failed to parse color: ${params.color}`,
-        });
-      }
-
-      writeCellsOperator.implementation(workingGrid, {
+      setCellColor({
+        grid: workingGrid,
         x: params.x,
         y: params.y,
-        color: maybeColor.data,
+        color: "red",
       });
 
       return { success: true };
@@ -116,7 +88,7 @@ const main = async () => {
     maxIterations: 30,
     targetGrid: input,
     workingGrid: workingGrid,
-    tools: [writeCellsTool],
+    tools: [setColorRedTool],
   });
 
   const workingGridImage = await getImage({ grid: session.workingGrid });
@@ -248,11 +220,11 @@ const main = async () => {
       for (const toolCall of toolCalls) {
         session.numToolCalls++;
 
-        if (toolCall.function.name !== writeCellsTool.spec.function.name) {
+        if (toolCall.function.name !== setColorRedTool.spec.function.name) {
           throw new Error(`Invalid tool call: ${toolCall.function.name}`);
         }
 
-        writeCellsTool.handler(toolCall.function.arguments);
+        setColorRedTool.handler(toolCall.function.arguments);
 
         session.messages.push(
           createChatToolResponseMessage({
