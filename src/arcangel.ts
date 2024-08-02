@@ -23,6 +23,7 @@ import { getDiff } from "./lib/getDiff.js";
 import { createExperiment } from "./lib/createExperiment.js";
 import { getTokenEstimate } from "./lib/getTokenEstimate.js";
 import { writeExperimentJson } from "./lib/writeExperimentJson.js";
+import { createChatAssistantMessage } from "./lib/createChatAssistantMessage.js";
 
 const chalk = new Chalk();
 
@@ -213,6 +214,15 @@ const main = async () => {
     const toolCalls = getToolCalls({ completion: response });
 
     if (toolCalls === undefined) {
+      if (response.choices[0].message.content === null) {
+        throw new Error(`Response is not a tool call or an assistant message.`);
+      }
+
+      session.messages.push(
+        createChatAssistantMessage({
+          content: response.choices[0].message.content,
+        }),
+      );
       // TODO, we assume the model is just done here, but we don't need to
       // assume that.
       break;
@@ -265,6 +275,6 @@ const main = async () => {
   writeExperimentJson({ experiment });
 };
 
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 30; i++) {
   await main();
 }

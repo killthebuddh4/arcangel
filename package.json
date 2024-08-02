@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run build && node --enable-source-maps build/arcangel.js",
+    "results": "npm run build && node --enable-source-maps build/results.js",
     "start": "node build/arcangel.js",
     "lint": "eslint .",
     "format": "prettier --check .",
