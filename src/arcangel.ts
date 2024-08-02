@@ -22,6 +22,7 @@ import { writeExperimentJson } from "./lib/writeExperimentJson.js";
 import { createChatAssistantMessage } from "./lib/createChatAssistantMessage.js";
 import { isException } from "./lib/isException.js";
 import { createException } from "./lib/createException.js";
+import { createChatTextMessage } from "./lib/createChatTextMessage.js";
 
 const chalk = new Chalk();
 
@@ -154,62 +155,6 @@ const main = async () => {
 
   while (session.currentIteration < session.maxIterations) {
     try {
-      const diff = getDiff({
-        lhs: session.targetGrid,
-        rhs: session.workingGrid,
-      });
-
-      const size = session.targetGrid.height * session.targetGrid.width;
-
-      if (diff.diff.length > size) {
-        throw new Error("Diff length is greater than grid size.");
-      }
-
-      const progress = Math.floor(((size - diff.diff.length) / size) * 100);
-
-      const numTokens = session.messages.reduce((acc, message) => {
-        const estimate = getTokenEstimate({ message });
-        return acc + estimate;
-      }, 0);
-
-      experiment.history.push({
-        numTokens,
-        numToolCalls: session.numToolCalls,
-        progress,
-      });
-
-      let stalled = true;
-      if (experiment.history.length < 10) {
-        stalled = false;
-      } else {
-        const tail = experiment.history.slice(-10);
-        for (let i = 0; i < tail.length - 1; i++) {
-          const prev = tail[i];
-          const next = tail[i + 1];
-          if (prev.progress !== next.progress) {
-            stalled = false;
-            break;
-          }
-        }
-      }
-
-      if (stalled) {
-        throw createException({
-          code: "PROGRESS_STALLED",
-          reason: `The has stalled at length ${session.currentIteration}.`,
-        });
-      }
-
-      session.currentIteration++;
-
-      let c = session.currentIteration % 2 == 0 ? chalk.green : chalk.yellow;
-
-      console.log(
-        c(
-          `Session: ${session.id} Iteration: ${session.currentIteration}, Progress: ${progress}%`,
-        ),
-      );
-
       const workingGridImage = await getImage({ grid: session.workingGrid });
 
       await writeImage({
@@ -267,22 +212,81 @@ const main = async () => {
         );
       }
 
-      const resultWorkingGridImage = await getImage({
-        grid: session.workingGrid,
-      });
+      const image = await getImage({ grid: session.workingGrid });
 
       await writeImage({
-        image: resultWorkingGridImage.image,
+        image: image.image,
         path: getWorkingGridPath({ session }),
       });
-
-      const image = await getImage({ grid: session.workingGrid });
 
       session.messages.push(
         createChatImageMessage({
           text: "Here's the most recent image of the working grid.",
           dataUrl: image.dataUrl,
         }),
+      );
+
+      const diff = getDiff({
+        lhs: session.targetGrid,
+        rhs: session.workingGrid,
+      });
+
+      const size = session.targetGrid.height * session.targetGrid.width;
+
+      if (diff.diff.length > size) {
+        throw new Error("Diff length is greater than grid size.");
+      }
+
+      session.messages.push(
+        createChatTextMessage({
+          // TODO Not going to give any details here because I want to see how much this improves quality.
+          content: `After the last command, the working grid has ${diff.diff.length} cells that differ from the target grid.`,
+        }),
+      );
+
+      const progress = Math.floor(((size - diff.diff.length) / size) * 100);
+
+      const numTokens = session.messages.reduce((acc, message) => {
+        const estimate = getTokenEstimate({ message });
+        return acc + estimate;
+      }, 0);
+
+      experiment.history.push({
+        numTokens,
+        numToolCalls: session.numToolCalls,
+        progress,
+      });
+
+      let stalled = true;
+      if (experiment.history.length < 10) {
+        stalled = false;
+      } else {
+        const tail = experiment.history.slice(-10);
+        for (let i = 0; i < tail.length - 1; i++) {
+          const prev = tail[i];
+          const next = tail[i + 1];
+          if (prev.progress !== next.progress) {
+            stalled = false;
+            break;
+          }
+        }
+      }
+
+      if (stalled) {
+        throw createException({
+          code: "PROGRESS_STALLED",
+          reason: `The has stalled at length ${session.currentIteration}.`,
+        });
+      }
+
+      session.currentIteration++;
+
+      let c = session.currentIteration % 2 == 0 ? chalk.green : chalk.yellow;
+
+      console.log(
+        c(
+          `Session: ${session.id} Iteration: ${session.currentIteration}, Progress: ${progress}%`,
+        ),
       );
     } catch (err) {
       if (isException(err)) {
