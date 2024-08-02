@@ -30,6 +30,8 @@ const chalk = new Chalk();
 const openai = getOpenAi();
 
 const main = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
   const input = createGrid({
     height: 4,
     width: 4,
@@ -160,7 +162,7 @@ const main = async () => {
     name: "Recreate solid grids",
     description: "Input is a solid grid, output should be the same solid grid.",
     parameters: {
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       examples: 2,
       includeGridlines: true,
       returnEncoded: true,
@@ -275,6 +277,6 @@ const main = async () => {
   writeExperimentJson({ experiment });
 };
 
-for (let i = 0; i < 30; i++) {
+for (let i = 0; i < 10; i++) {
   await main();
 }

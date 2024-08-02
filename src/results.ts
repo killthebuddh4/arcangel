@@ -4,8 +4,10 @@ import { Chalk } from "chalk";
 
 const chalk = new Chalk();
 
+const EXPERIMENT_ID = "2024-08-02-01";
+
 const main = async () => {
-  const sessions = await readSessions({ experimentId: "2024-08-02-00" });
+  const sessions = await readSessions({ experimentId: EXPERIMENT_ID });
 
   for (const session of sessions) {
     const lastMessage =
@@ -28,7 +30,7 @@ const main = async () => {
   }
 
   try {
-    const summary = await getResultSummary({ experimentId: "2024-08-02-00" });
+    const summary = await getResultSummary({ experimentId: EXPERIMENT_ID });
 
     console.log("Summary:");
     console.log(JSON.stringify(summary, null, 2));
