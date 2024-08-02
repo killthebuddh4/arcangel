@@ -1,33 +1,39 @@
-import { readSessionIds } from "./lib/readSessionIds.js";
-import { readExperiment } from "./lib/readExperiment.js";
+import { getResultSummary } from "./lib/getResultSummary.js";
+import { readSessions } from "./lib/readExperiments.js";
 import { Chalk } from "chalk";
 
 const chalk = new Chalk();
 
 const main = async () => {
-  const sessionIds = await readSessionIds();
+  const sessions = await readSessions({ experimentId: "2024-08-02-00" });
 
-  console.log("NUMBER OF SESSIONS:", sessionIds.length);
-
-  for (const sessionId of sessionIds) {
-    const experiment = await readExperiment({ sessionId });
-
+  for (const session of sessions) {
     const lastMessage =
-      experiment.session.messages[experiment.session.messages.length - 1];
+      session.session.messages[session.session.messages.length - 1];
 
-    const progress = experiment.history[experiment.history.length - 1].progress;
-
-    console.log(`Session ID: ${sessionId}`);
-    console.log(`Progress: ${progress}%`);
-    console.log("Last message:");
-
-    if (progress !== 100) {
-      console.log(chalk.red(JSON.stringify(lastMessage.content, null, 2)));
+    let progress: number;
+    if (session.history.length === 0) {
+      progress = 0;
     } else {
-      console.log(chalk.green(JSON.stringify(lastMessage.content, null, 2)));
+      progress = session.history[session.history.length - 1].progress;
     }
 
-    console.log("\n");
+    const display = `Session ID: ${session.session.id}\nProgress: ${progress}\nLast Message: ${JSON.stringify(lastMessage.content, null, 2)}\n`;
+
+    if (progress === 100) {
+      console.log(chalk.green(display));
+    } else {
+      console.log(chalk.red(display));
+    }
+  }
+
+  try {
+    const summary = await getResultSummary({ experimentId: "2024-08-02-00" });
+
+    console.log("Summary:");
+    console.log(JSON.stringify(summary, null, 2));
+  } catch (e) {
+    console.error(e);
   }
 };
 
