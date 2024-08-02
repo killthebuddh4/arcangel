@@ -20,19 +20,22 @@ import { createExperiment } from "./lib/createExperiment.js";
 import { getTokenEstimate } from "./lib/getTokenEstimate.js";
 import { writeExperimentJson } from "./lib/writeExperimentJson.js";
 import { createChatAssistantMessage } from "./lib/createChatAssistantMessage.js";
+import { isException } from "./lib/isException.js";
 
 const chalk = new Chalk();
 
 const openai = getOpenAi();
 
-const MODEL = "gpt-4o";
+const MODEL = "gpt-4o-mini";
+
+const GRID_SIZE = 8;
 
 const main = async () => {
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
   const input = createGrid({
-    height: 4,
-    width: 4,
+    height: GRID_SIZE,
+    width: GRID_SIZE,
     color: "red",
   });
 
@@ -85,7 +88,7 @@ const main = async () => {
 
   const session = createSession({
     taskId: "micro-solid-grids",
-    maxIterations: 30,
+    maxIterations: 100,
     targetGrid: input,
     workingGrid: workingGrid,
     tools: [setColorRedTool],
@@ -252,7 +255,14 @@ const main = async () => {
           dataUrl: image.dataUrl,
         }),
       );
-    } catch {
+    } catch (err) {
+      if (isException(err)) {
+        session.error = `CODE: ${err.code}, REASON: ${err.reason}`;
+      } else {
+        console.error("UNHANDLED ERROR");
+        console.error(err);
+      }
+
       break;
     }
   }

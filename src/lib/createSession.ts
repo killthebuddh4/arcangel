@@ -20,6 +20,7 @@ export const createSession = (args: {
     targetGrid: args.targetGrid,
     workingGrid: args.workingGrid,
     messages: [],
+    error: null,
     tools: args.tools,
     outputGrid: null,
   };
