@@ -21,6 +21,7 @@ import { getTokenEstimate } from "./lib/getTokenEstimate.js";
 import { writeExperimentJson } from "./lib/writeExperimentJson.js";
 import { createChatAssistantMessage } from "./lib/createChatAssistantMessage.js";
 import { isException } from "./lib/isException.js";
+import { createException } from "./lib/createException.js";
 
 const chalk = new Chalk();
 
@@ -177,9 +178,37 @@ const main = async () => {
         progress,
       });
 
-      console.log(chalk.green(JSON.stringify(experiment.history, null, 2)));
+      let stalled = true;
+      if (experiment.history.length < 10) {
+        stalled = false;
+      } else {
+        const tail = experiment.history.slice(-10);
+        for (let i = 0; i < tail.length - 1; i++) {
+          const prev = tail[i];
+          const next = tail[i + 1];
+          if (prev.progress !== next.progress) {
+            stalled = false;
+            break;
+          }
+        }
+      }
+
+      if (stalled) {
+        throw createException({
+          code: "PROGRESS_STALLED",
+          reason: `The has stalled at length ${session.currentIteration}.`,
+        });
+      }
 
       session.currentIteration++;
+
+      let c = session.currentIteration % 2 == 0 ? chalk.green : chalk.yellow;
+
+      console.log(
+        c(
+          `Session: ${session.id} Iteration: ${session.currentIteration}, Progress: ${progress}%`,
+        ),
+      );
 
       const workingGridImage = await getImage({ grid: session.workingGrid });
 
@@ -259,8 +288,7 @@ const main = async () => {
       if (isException(err)) {
         session.error = `CODE: ${err.code}, REASON: ${err.reason}`;
       } else {
-        console.error("UNHANDLED ERROR");
-        console.error(err);
+        session.error = `UNHANDLED ERROR: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
       }
 
       break;
