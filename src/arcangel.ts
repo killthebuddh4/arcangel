@@ -258,10 +258,10 @@ const main = async () => {
       });
 
       let stalled = true;
-      if (experiment.history.length < 10) {
+      if (experiment.history.length < 5) {
         stalled = false;
       } else {
-        const tail = experiment.history.slice(-10);
+        const tail = experiment.history.slice(-5);
         for (let i = 0; i < tail.length - 1; i++) {
           const prev = tail[i];
           const next = tail[i + 1];
@@ -273,6 +273,29 @@ const main = async () => {
       }
 
       if (stalled) {
+        session.messages.push(
+          createChatTextMessage({
+            content: `Progress seems to have stalled at ${diff.diff.length} cells different from the target grid. That indicates that you keep executing the same command. Please try something different.`,
+          }),
+        );
+      }
+
+      let veryStalled = true;
+      if (experiment.history.length < 10) {
+        veryStalled = false;
+      } else {
+        const tail = experiment.history.slice(-10);
+        for (let i = 0; i < tail.length - 1; i++) {
+          const prev = tail[i];
+          const next = tail[i + 1];
+          if (prev.progress !== next.progress) {
+            veryStalled = false;
+            break;
+          }
+        }
+      }
+
+      if (veryStalled) {
         throw createException({
           code: "PROGRESS_STALLED",
           reason: `The has stalled at length ${session.currentIteration}.`,
