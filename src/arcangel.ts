@@ -29,6 +29,8 @@ const chalk = new Chalk();
 
 const openai = getOpenAi();
 
+const MODEL = "gpt-4o";
+
 const main = async () => {
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
@@ -75,7 +77,7 @@ const main = async () => {
       if (!maybeColor.ok) {
         throw createException({
           code: "COLOR_PARSE_FAILED",
-          reason: "TODO",
+          reason: `Failed to parse color: ${params.color}`,
         });
       }
 
@@ -162,7 +164,7 @@ const main = async () => {
     name: "Recreate solid grids",
     description: "Input is a solid grid, output should be the same solid grid.",
     parameters: {
-      model: "gpt-4o",
+      model: MODEL,
       examples: 2,
       includeGridlines: true,
       returnEncoded: true,
@@ -175,103 +177,112 @@ const main = async () => {
   });
 
   while (session.currentIteration < session.maxIterations) {
-    const diff = getDiff({ lhs: session.targetGrid, rhs: session.workingGrid });
+    try {
+      const diff = getDiff({
+        lhs: session.targetGrid,
+        rhs: session.workingGrid,
+      });
 
-    const size = session.targetGrid.height * session.targetGrid.width;
+      const size = session.targetGrid.height * session.targetGrid.width;
 
-    if (diff.diff.length > size) {
-      throw new Error("Diff length is greater than grid size.");
-    }
+      if (diff.diff.length > size) {
+        throw new Error("Diff length is greater than grid size.");
+      }
 
-    const progress = Math.floor(((size - diff.diff.length) / size) * 100);
+      const progress = Math.floor(((size - diff.diff.length) / size) * 100);
 
-    const numTokens = session.messages.reduce((acc, message) => {
-      const estimate = getTokenEstimate({ message });
-      return acc + estimate;
-    }, 0);
+      const numTokens = session.messages.reduce((acc, message) => {
+        const estimate = getTokenEstimate({ message });
+        return acc + estimate;
+      }, 0);
 
-    experiment.history.push({
-      numTokens,
-      numToolCalls: session.numToolCalls,
-      progress,
-    });
+      experiment.history.push({
+        numTokens,
+        numToolCalls: session.numToolCalls,
+        progress,
+      });
 
-    console.log(chalk.green(JSON.stringify(experiment.history, null, 2)));
+      console.log(chalk.green(JSON.stringify(experiment.history, null, 2)));
 
-    session.currentIteration++;
+      session.currentIteration++;
 
-    const workingGridImage = await getImage({ grid: session.workingGrid });
+      const workingGridImage = await getImage({ grid: session.workingGrid });
 
-    await writeImage({
-      image: workingGridImage.image,
-      path: getWorkingGridPath({ session }),
-    });
+      await writeImage({
+        image: workingGridImage.image,
+        path: getWorkingGridPath({ session }),
+      });
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      tools: session.tools.map((tool) => tool.spec),
-      messages: session.messages,
-    });
+      const response = await openai.chat.completions.create({
+        model: MODEL,
+        tools: session.tools.map((tool) => tool.spec),
+        messages: session.messages,
+      });
 
-    const toolCalls = getToolCalls({ completion: response });
+      const toolCalls = getToolCalls({ completion: response });
 
-    if (toolCalls === undefined) {
-      if (response.choices[0].message.content === null) {
-        throw new Error(`Response is not a tool call or an assistant message.`);
+      if (toolCalls === undefined) {
+        if (response.choices[0].message.content === null) {
+          throw new Error(
+            `Response is not a tool call or an assistant message.`,
+          );
+        }
+
+        session.messages.push(
+          createChatAssistantMessage({
+            content: response.choices[0].message.content,
+          }),
+        );
+        // TODO, we assume the model is just done here, but we don't need to
+        // assume that.
+        break;
       }
 
       session.messages.push(
-        createChatAssistantMessage({
+        createChatToolCallMessage({
           content: response.choices[0].message.content,
+          toolCalls,
         }),
       );
-      // TODO, we assume the model is just done here, but we don't need to
-      // assume that.
+
+      for (const toolCall of toolCalls) {
+        session.numToolCalls++;
+
+        if (toolCall.function.name !== writeCellsTool.spec.function.name) {
+          throw new Error(`Invalid tool call: ${toolCall.function.name}`);
+        }
+
+        writeCellsTool.handler(toolCall.function.arguments);
+
+        session.messages.push(
+          createChatToolResponseMessage({
+            toolCallId: toolCall.id,
+            name: toolCall.function.name,
+            content: getString({ grid: session.workingGrid }),
+          }),
+        );
+      }
+
+      const resultWorkingGridImage = await getImage({
+        grid: session.workingGrid,
+      });
+
+      await writeImage({
+        image: resultWorkingGridImage.image,
+        path: getWorkingGridPath({ session }),
+      });
+
+      const image = await getImage({ grid: session.workingGrid });
+
+      session.messages.push(
+        createChatImageMessage({
+          text: "Here's the most recent image of the working grid.",
+          dataUrl: image.dataUrl,
+        }),
+      );
+    } catch {
       break;
     }
-
-    session.messages.push(
-      createChatToolCallMessage({
-        content: response.choices[0].message.content,
-        toolCalls,
-      }),
-    );
-
-    for (const toolCall of toolCalls) {
-      session.numToolCalls++;
-
-      if (toolCall.function.name !== writeCellsTool.spec.function.name) {
-        throw new Error(`Invalid tool call: ${toolCall.function.name}`);
-      }
-
-      writeCellsTool.handler(toolCall.function.arguments);
-
-      session.messages.push(
-        createChatToolResponseMessage({
-          toolCallId: toolCall.id,
-          name: toolCall.function.name,
-          content: getString({ grid: session.workingGrid }),
-        }),
-      );
-    }
-
-    const resultWorkingGridImage = await getImage({
-      grid: session.workingGrid,
-    });
-
-    await writeImage({
-      image: resultWorkingGridImage.image,
-      path: getWorkingGridPath({ session }),
-    });
-
-    const image = await getImage({ grid: session.workingGrid });
-
-    session.messages.push(
-      createChatImageMessage({
-        text: "Here's the most recent image of the working grid.",
-        dataUrl: image.dataUrl,
-      }),
-    );
   }
 
   writeExperimentJson({ experiment });
