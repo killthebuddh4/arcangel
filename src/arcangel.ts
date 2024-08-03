@@ -272,10 +272,13 @@ const main = async () => {
         }
       }
 
+      const randomIncompleteCell =
+        diff.diff[Math.floor(Math.random() * diff.diff.length)];
+
       if (stalled) {
         session.messages.push(
           createChatTextMessage({
-            content: `Progress seems to have stalled at ${diff.diff.length} cells different from the target grid. That indicates that you keep executing the same command. Please try something different.`,
+            content: `Progress seems to have stalled at ${diff.diff.length} cells different from the target grid. That indicates that you keep executing the same command. One example of a cell that is different is the cell at (${randomIncompleteCell.x}, ${randomIncompleteCell.y}).`,
           }),
         );
       }
@@ -325,6 +328,6 @@ const main = async () => {
   writeExperimentJson({ experiment });
 };
 
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 50; i++) {
   await main();
 }
