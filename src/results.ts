@@ -4,7 +4,7 @@ import { Chalk } from "chalk";
 
 const chalk = new Chalk();
 
-const EXPERIMENT_ID = "2024-08-02-07";
+const EXPERIMENT_ID = "2024-08-03-00";
 
 const main = async () => {
   const sessions = await readSessions({ experimentId: EXPERIMENT_ID });
