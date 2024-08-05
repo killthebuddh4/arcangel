@@ -47,46 +47,36 @@ const main = async () => {
   });
 
   const setColorRedTool = createTool({
-    name: "setColorRed",
-    description: "Sets the color of the target cell to red.",
+    name: "setCellsToRed",
+    description: "Sets the color of the targeted cells to red.",
     inputSchema: z.object({
-      x: z.number(),
-      y: z.number(),
+      cells: z.array(
+        z.object({
+          x: z.number(),
+          y: z.number(),
+        }),
+      ),
     }),
     outputSchema: z.object({
+      // TODO We could return something like the number of cells written vs the
+      // number of cells that were already red.
       success: z.boolean(),
     }),
     handler: (params): { success: boolean } => {
-      setCellColor({
-        grid: workingGrid,
-        x: params.x,
-        y: params.y,
-        color: "red",
-      });
+      for (const cell of params.cells) {
+        setCellColor({
+          grid: workingGrid,
+          x: cell.x,
+          y: cell.y,
+          color: "red",
+        });
+      }
 
       return { success: true };
     },
   });
 
   const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. The cells are zero-indexed! Each session is initialized with a target grid and a blank working grid. Your goal is to run commands until the user's request has been satisfied. Every command's output is a stringified version of the working grid. Every time a command exits, the shell's daemon will show you an image of the working grid.`;
-
-  const exampleGridBlue = createGrid({
-    height: 8,
-    width: 8,
-    color: "blue",
-  });
-
-  const exampleGridBlueImage = await getImage({ grid: exampleGridBlue });
-
-  const exampleGridPurple = createGrid({
-    height: 5,
-    width: 5,
-    color: "purple",
-  });
-
-  const exampleGridPurpleImage = await getImage({
-    grid: exampleGridPurple,
-  });
 
   const session = createSession({
     taskId: "micro-solid-grids",
@@ -105,33 +95,213 @@ const main = async () => {
     path: getInputGridPath({ session }),
   });
 
+  // one point, x, first row, last column, 2x2 square
+
+  const onePointGrid = createGrid({
+    height: GRID_SIZE,
+    width: GRID_SIZE,
+    color: "black",
+  });
+
+  const onePointCells: Array<{ x: number; y: number }> = [{ x: 0, y: 0 }];
+
+  for (const cell of onePointCells) {
+    setCellColor({
+      grid: onePointGrid,
+      x: cell.x,
+      y: cell.y,
+      color: "red",
+    });
+  }
+
+  const onePointGridImage = await getImage({ grid: onePointGrid });
+
+  await writeImage({
+    image: onePointGridImage.image,
+    path: "./data/one-point-grid.png",
+  });
+
+  const onePointGridToolCall = `setCellsToRed(${JSON.stringify({ cells: onePointCells }, null, 2)});`;
+
+  const xGrid = createGrid({
+    height: GRID_SIZE,
+    width: GRID_SIZE,
+    color: "black",
+  });
+
+  const xCells: Array<{ x: number; y: number }> = [
+    { x: 2, y: 2 },
+    { x: 3, y: 3 },
+    { x: 4, y: 4 },
+    { x: 4, y: 2 },
+    { x: 2, y: 4 },
+  ];
+
+  for (const cell of xCells) {
+    setCellColor({
+      grid: xGrid,
+      x: cell.x,
+      y: cell.y,
+      color: "red",
+    });
+  }
+
+  const xGridImage = await getImage({ grid: xGrid });
+
+  await writeImage({
+    image: xGridImage.image,
+    path: "./data/x-grid.png",
+  });
+
+  const xGridToolCall = `setCellsToRed(${JSON.stringify({ cells: xCells }, null, 2)});`;
+
+  const firstRowGrid = createGrid({
+    height: GRID_SIZE,
+    width: GRID_SIZE,
+    color: "black",
+  });
+
+  const firstRowCells: Array<{ x: number; y: number }> = [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 2, y: 0 },
+    { x: 3, y: 0 },
+    { x: 4, y: 0 },
+    { x: 5, y: 0 },
+    { x: 6, y: 0 },
+    { x: 7, y: 0 },
+  ];
+
+  for (const cell of firstRowCells) {
+    setCellColor({
+      grid: firstRowGrid,
+      x: cell.x,
+      y: cell.y,
+      color: "red",
+    });
+  }
+
+  const firstRowGridImage = await getImage({ grid: firstRowGrid });
+
+  await writeImage({
+    image: firstRowGridImage.image,
+    path: "./data/first-row-grid.png",
+  });
+
+  const firstRowGridToolCall = `setCellsToRed(${JSON.stringify({ cells: firstRowCells }, null, 2)});`;
+
+  const lastColumnGrid = createGrid({
+    height: GRID_SIZE,
+    width: GRID_SIZE,
+    color: "black",
+  });
+
+  const lastColumnCells: Array<{ x: number; y: number }> = [
+    { x: 7, y: 0 },
+    { x: 7, y: 1 },
+    { x: 7, y: 2 },
+    { x: 7, y: 3 },
+    { x: 7, y: 4 },
+    { x: 7, y: 5 },
+    { x: 7, y: 6 },
+    { x: 7, y: 7 },
+  ];
+
+  for (const cell of lastColumnCells) {
+    setCellColor({
+      grid: lastColumnGrid,
+      x: cell.x,
+      y: cell.y,
+      color: "red",
+    });
+  }
+
+  const lastColumnGridImage = await getImage({ grid: lastColumnGrid });
+
+  await writeImage({
+    image: lastColumnGridImage.image,
+    path: "./data/last-column-grid.png",
+  });
+
+  const lastColumnGridToolCall = `setCellsToRed(${JSON.stringify({ cells: lastColumnCells }, null, 2)});`;
+
+  const twoByTwoSquareGrid = createGrid({
+    height: GRID_SIZE,
+    width: GRID_SIZE,
+    color: "black",
+  });
+
+  const twoByTwoSquareCells: Array<{ x: number; y: number }> = [
+    { x: 0, y: 0 },
+    { x: 0, y: 1 },
+    { x: 1, y: 0 },
+    { x: 1, y: 1 },
+  ];
+
+  for (const cell of twoByTwoSquareCells) {
+    setCellColor({
+      grid: twoByTwoSquareGrid,
+      x: cell.x,
+      y: cell.y,
+      color: "red",
+    });
+  }
+
+  const twoByTwoSquareGridImage = await getImage({ grid: twoByTwoSquareGrid });
+
+  await writeImage({
+    image: twoByTwoSquareGridImage.image,
+    path: "./data/two-by-two-square-grid.png",
+  });
+
+  const twoByTwoSquareGridToolCall = `setCellsToRed(${JSON.stringify({ cells: twoByTwoSquareCells }, null, 2)});`;
+
   const messages = [
     createChatSystemMessage({
       content: systemPrompt,
     }),
-    createChatImageMessage({
-      text: "Here's an image of an example target grid.",
-      dataUrl: exampleGridBlueImage.dataUrl,
+    createChatTextMessage({
+      content: `Here's an example call that sets the top left cell to red. ${onePointGridToolCall}`,
     }),
     createChatImageMessage({
-      text: "And here's an image of the corresponding completed working grid.",
-      dataUrl: exampleGridBlueImage.dataUrl,
+      text: "And here's the result of that call on a blank grid.",
+      dataUrl: onePointGridImage.dataUrl,
+    }),
+    createChatTextMessage({
+      content: `Here's an example call that sets an X pattern of cells to red. ${xGridToolCall}`,
     }),
     createChatImageMessage({
-      text: "Here's an image of another example target grid.",
-      dataUrl: exampleGridPurpleImage.dataUrl,
+      text: "And here's the result of that call on a blank grid.",
+      dataUrl: xGridImage.dataUrl,
+    }),
+    createChatTextMessage({
+      content: `Here's an example call that sets the first row of cells to red. ${firstRowGridToolCall}`,
     }),
     createChatImageMessage({
-      text: "And here's an image of the corresponding completed working grid.",
-      dataUrl: exampleGridPurpleImage.dataUrl,
+      text: "And here's the result of that call on a blank grid.",
+      dataUrl: firstRowGridImage.dataUrl,
+    }),
+    createChatTextMessage({
+      content: `Here's an example call that sets the last column of cells to red. ${lastColumnGridToolCall}`,
     }),
     createChatImageMessage({
-      text: "Here's an image of the target grid.",
-      dataUrl: inputImage.dataUrl,
+      text: "And here's the result of that call on a blank grid.",
+      dataUrl: lastColumnGridImage.dataUrl,
+    }),
+    createChatTextMessage({
+      content: `Here's an example call that sets a 2x2 square of cells to red. ${twoByTwoSquareGridToolCall}`,
     }),
     createChatImageMessage({
-      text: "And here's an image of the blank working grid.",
+      text: "And here's the result of that call on a blank grid.",
+      dataUrl: twoByTwoSquareGridImage.dataUrl,
+    }),
+    createChatImageMessage({
+      text: "Ok, now that you've seen some examples, I've initialized the working grid. It's blank, here's an image of it.",
       dataUrl: workingGridImage.dataUrl,
+    }),
+    createChatImageMessage({
+      text: "And here's an image of the target grid. Please recreate this grid by running commands.",
+      dataUrl: inputImage.dataUrl,
     }),
   ];
 
@@ -307,10 +477,8 @@ const main = async () => {
 
       session.currentIteration++;
 
-      let c = session.currentIteration % 2 == 0 ? chalk.green : chalk.yellow;
-
       console.log(
-        c(
+        (session.currentIteration % 2 === 0 ? chalk.green : chalk.yellow)(
           `Session: ${session.id} Iteration: ${session.currentIteration}, Progress: ${progress}%`,
         ),
       );
@@ -328,6 +496,6 @@ const main = async () => {
   writeExperimentJson({ experiment });
 };
 
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 20; i++) {
   await main();
 }

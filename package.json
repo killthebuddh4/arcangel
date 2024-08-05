@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "npm run build && node --enable-source-maps build/arcangel.js",
     "results": "npm run build && node --enable-source-maps build/results.js",
+    "tp": "npm run build && node --enable-source-maps build/target-practice.js",
     "start": "node build/arcangel.js",
     "lint": "eslint .",
     "format": "prettier --check .",
