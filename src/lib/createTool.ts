@@ -3,6 +3,8 @@ import { Tool } from "../types/Tool.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { createException } from "./createException.js";
 
+// TODO: Look into structured outputs and JSON mode.
+
 export const createTool = <I, O>(args: {
   name: string;
   description: string;
@@ -26,7 +28,7 @@ export const createTool = <I, O>(args: {
       } catch {
         throw createException({
           code: "GENERATED_ARGS_ARE_INVALID_JSON",
-          reason: "The generated arguments are not valid JSON.",
+          reason: `Tool: ${args.name}: The generated arguments are not valid JSON.`,
         });
       }
 
@@ -35,7 +37,7 @@ export const createTool = <I, O>(args: {
       if (!maybeInput.success) {
         throw createException({
           code: "GENERATED_ARGS_DO_NOT_MATCH_INPUT_SCHEMA",
-          reason: "The generated args don't match the input JSON schema.",
+          reason: `Tool: ${args.name}: The generated args don't match the input JSON schema. Args were: ${generated}`,
         });
       }
 

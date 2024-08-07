@@ -72,6 +72,29 @@ export const getResultSummary = async (args: { experimentId: string }) => {
       );
     }, 0) / numSuccessful;
 
+  const numToolCallsByName = sessions.reduce(
+    (acc, experiment) => {
+      if (experiment.history.length === 0) {
+        return acc;
+      }
+
+      for (const message of experiment.session.messages) {
+        if (message.role === "tool") {
+          const toolName = message.name;
+
+          if (toolName in acc) {
+            acc[toolName] += 1;
+          } else {
+            acc[toolName] = 1;
+          }
+        }
+      }
+
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
   let model: string | null = null;
 
   for (const experiment of sessions) {
@@ -113,6 +136,7 @@ export const getResultSummary = async (args: { experimentId: string }) => {
     averageNumMessages,
     averageSuccessMessages,
     averageFailureMessages,
+    numToolCallsByName,
     averageToolCalls,
     averageFailureToolCalls,
     averageSuccessToolCalls,

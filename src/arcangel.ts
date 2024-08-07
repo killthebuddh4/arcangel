@@ -2,12 +2,12 @@ import { z } from "zod";
 import { createGrid } from "./lib/createGrid.js";
 import { createTool } from "./lib/createTool.js";
 import { getOpenAi } from "./lib/getOpenAi.js";
-import { getImage } from "./lib/getImage.js";
+// import { getImage } from "./lib/getImage.js";
+import { getDetailedImage as getImage } from "./lib/getDetailedImage.js";
 import { createChatSystemMessage } from "./lib/createChatSystemMessage.js";
 import { createChatImageMessage } from "./lib/createChatImageMessage.js";
 import { getToolCalls } from "./lib/getToolCalls.js";
 import { writeImage } from "./lib/writeImage.js";
-import { getString } from "./lib/getString.js";
 import { createChatToolResponseMessage } from "./lib/createChatToolResponseMessage.js";
 import { createSession } from "./lib/createSession.js";
 import { setCellColor } from "./lib/setCellColor.js";
@@ -46,6 +46,30 @@ const main = async () => {
     width: input.width,
   });
 
+  const getDimensionsTool = createTool({
+    name: "getDimensions",
+    description: "Returns the dimensions of the grid.",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      height: z.number(),
+      width: z.number(),
+      minX: z.number(),
+      maxX: z.number(),
+      minY: z.number(),
+      maxY: z.number(),
+    }),
+    handler: () => {
+      return {
+        height: workingGrid.height,
+        width: workingGrid.width,
+        minX: 0,
+        maxX: workingGrid.width - 1,
+        minY: 0,
+        maxY: workingGrid.height - 1,
+      };
+    },
+  });
+
   const setColorRedTool = createTool({
     name: "setCellsToRed",
     description: "Sets the color of the targeted cells to red.",
@@ -76,14 +100,15 @@ const main = async () => {
     },
   });
 
-  const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. The cells are zero-indexed! Each session is initialized with a target grid and a blank working grid. Your goal is to run commands until the user's request has been satisfied. Every command's output is a stringified version of the working grid. Every time a command exits, the shell's daemon will show you an image of the working grid.`;
+  // TODO: You just remembered that the openai api supports user "names", the user could be "daemon".
+  const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. Each session is initialized with a target grid and a blank working grid. Your goal is to run commands until the user's request has been satisfied. Every time a command exits, the shell's daemon will show you an image of the working grid.`;
 
   const session = createSession({
     taskId: "micro-solid-grids",
     maxIterations: 100,
     targetGrid: input,
     workingGrid: workingGrid,
-    tools: [setColorRedTool],
+    tools: [setColorRedTool, getDimensionsTool],
   });
 
   const workingGridImage = await getImage({ grid: session.workingGrid });
@@ -312,12 +337,16 @@ const main = async () => {
     description: "Input is a solid grid, output should be the same solid grid.",
     parameters: {
       model: MODEL,
+      // THIS SHOULD NOT BE HARD-CODED, the value is wrong for most of the
+      // experiments now.
       examples: 2,
+      // Ah, this is wrong too. Most of these parameters are wrong in my
+      // recorded exp.md files.
       includeGridlines: true,
       returnEncoded: true,
       dimensions: {
-        height: 4,
-        width: 4,
+        height: GRID_SIZE,
+        width: GRID_SIZE,
       },
     },
     session,
@@ -334,7 +363,7 @@ const main = async () => {
 
       const response = await openai.chat.completions.create({
         model: MODEL,
-        tools: session.tools.map((tool) => tool.spec),
+        tools: [setColorRedTool.spec],
         messages: session.messages,
       });
 
@@ -367,17 +396,33 @@ const main = async () => {
       for (const toolCall of toolCalls) {
         session.numToolCalls++;
 
-        if (toolCall.function.name !== setColorRedTool.spec.function.name) {
-          throw new Error(`Invalid tool call: ${toolCall.function.name}`);
+        let toolCallResult;
+        switch (toolCall.function.name) {
+          // TODO Keep track of how many extra cells are set in the process. I
+          // feel like too many extras is really not good because in many cases
+          // we won't have idempotent (or whatever) tools.
+          case "setCellsToRed":
+            toolCallResult = setColorRedTool.handler(
+              toolCall.function.arguments,
+            );
+            break;
+          case "getDimensions":
+            toolCallResult = getDimensionsTool.handler(
+              toolCall.function.arguments,
+            );
+            break;
+          default:
+            throw createException({
+              code: "TOOL_CALL_INVALID_NAME",
+              reason: `Tool call has invalid name: ${toolCall.function.name}`,
+            });
         }
-
-        setColorRedTool.handler(toolCall.function.arguments);
 
         session.messages.push(
           createChatToolResponseMessage({
             toolCallId: toolCall.id,
             name: toolCall.function.name,
-            content: getString({ grid: session.workingGrid }),
+            content: JSON.stringify(toolCallResult, null, 2),
           }),
         );
       }
@@ -496,6 +541,6 @@ const main = async () => {
   writeExperimentJson({ experiment });
 };
 
-for (let i = 0; i < 20; i++) {
+for (let i = 0; i < 30; i++) {
   await main();
 }
