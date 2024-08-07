@@ -13,6 +13,8 @@ export const createSession = (args: {
 }): Session => {
   return {
     id: `${Date.now()}-${uuidv4()}`,
+    startTime: Date.now(),
+    elapsedTime: null,
     taskId: args.taskId,
     maxIterations: args.maxIterations,
     currentIteration: 0,

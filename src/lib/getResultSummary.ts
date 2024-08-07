@@ -95,6 +95,18 @@ export const getResultSummary = async (args: { experimentId: string }) => {
     {} as Record<string, number>,
   );
 
+  const averageSuccessElapsedTime =
+    successes.reduce((acc, experiment) => {
+      if (experiment.session.elapsedTime === null) {
+        throw createException({
+          code: "INVALID_ELAPSED_TIME",
+          reason: `Elapsed time is null on a successful experiment: sessionId: ${experiment.session.id}`,
+        });
+      }
+
+      return acc + experiment.session.elapsedTime;
+    }, 0) / numSuccessful;
+
   let model: string | null = null;
 
   for (const experiment of sessions) {
@@ -131,6 +143,7 @@ export const getResultSummary = async (args: { experimentId: string }) => {
     numExperiments,
     numSuccessful,
     numFailures,
+    averageSuccessElapsedTime,
     averageProgress,
     averageFailureProgress,
     averageNumMessages,

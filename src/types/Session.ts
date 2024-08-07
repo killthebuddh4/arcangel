@@ -4,6 +4,8 @@ import { Tool } from "./Tool.js";
 
 export type Session = {
   id: string;
+  startTime: number;
+  elapsedTime: number | null;
   taskId: string;
   maxIterations: number;
   currentIteration: number;
