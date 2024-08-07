@@ -1,13 +1,14 @@
 import { getResultSummary } from "./lib/getResultSummary.js";
 import { readSessions } from "./lib/readExperiments.js";
 import { Chalk } from "chalk";
+import { getConfig } from "./lib/getConfig.js";
 
 const chalk = new Chalk();
 
-const EXPERIMENT_ID = "2024-08-06-02";
-
 const main = async () => {
-  const sessions = await readSessions({ experimentId: EXPERIMENT_ID });
+  const sessions = await readSessions({
+    experimentId: getConfig().EXPERIMENT_ID,
+  });
 
   for (const session of sessions) {
     const lastMessage =
@@ -34,7 +35,9 @@ const main = async () => {
   }
 
   try {
-    const summary = await getResultSummary({ experimentId: EXPERIMENT_ID });
+    const summary = await getResultSummary({
+      experimentId: getConfig().EXPERIMENT_ID,
+    });
 
     console.log("Summary:");
     console.log(JSON.stringify(summary, null, 2));

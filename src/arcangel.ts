@@ -38,8 +38,25 @@ const main = async () => {
   const input = createGrid({
     height: GRID_SIZE,
     width: GRID_SIZE,
-    color: "red",
+    color: "black",
   });
+
+  const xCells: Array<{ x: number; y: number }> = [
+    { x: 2, y: 2 },
+    { x: 3, y: 3 },
+    { x: 4, y: 4 },
+    { x: 4, y: 2 },
+    { x: 2, y: 4 },
+  ];
+
+  for (const cell of xCells) {
+    setCellColor({
+      grid: input,
+      x: cell.x,
+      y: cell.y,
+      color: "red",
+    });
+  }
 
   const workingGrid = createGrid({
     height: input.height,
@@ -67,6 +84,36 @@ const main = async () => {
         minY: 0,
         maxY: workingGrid.height - 1,
       };
+    },
+  });
+
+  const setColorBlackTool = createTool({
+    name: "setCellsToBlack",
+    description: "Sets the color of the targeted cells to black.",
+    inputSchema: z.object({
+      cells: z.array(
+        z.object({
+          x: z.number(),
+          y: z.number(),
+        }),
+      ),
+    }),
+    outputSchema: z.object({
+      // TODO We could return something like the number of cells written vs the
+      // number of cells that were already red.
+      success: z.boolean(),
+    }),
+    handler: (params): { success: boolean } => {
+      for (const cell of params.cells) {
+        setCellColor({
+          grid: workingGrid,
+          x: cell.x,
+          y: cell.y,
+          color: "black",
+        });
+      }
+
+      return { success: true };
     },
   });
 
@@ -100,11 +147,60 @@ const main = async () => {
     },
   });
 
+  const setRedXTool = createTool({
+    name: "setRedX",
+    description:
+      "Colors an X pattern, centered at (x, y), to red. The size parameter controls how many cells each arm of the X has, not including the center.",
+    inputSchema: z.object({
+      x: z.number(),
+      y: z.number(),
+      size: z.number(),
+    }),
+    outputSchema: z.object({
+      // TODO We could return something like the number of cells written vs the
+      // number of cells that were already red.
+      success: z.boolean(),
+    }),
+    handler: (params): { success: boolean } => {
+      for (let i = 0; i <= params.size; i++) {
+        setCellColor({
+          grid: workingGrid,
+          x: params.x + i,
+          y: params.y + i,
+          color: "red",
+        });
+
+        setCellColor({
+          grid: workingGrid,
+          x: params.x - i,
+          y: params.y + i,
+          color: "red",
+        });
+
+        setCellColor({
+          grid: workingGrid,
+          x: params.x + i,
+          y: params.y - i,
+          color: "red",
+        });
+
+        setCellColor({
+          grid: workingGrid,
+          x: params.x - i,
+          y: params.y - i,
+          color: "red",
+        });
+      }
+
+      return { success: true };
+    },
+  });
+
   // TODO: You just remembered that the openai api supports user "names", the user could be "daemon".
-  const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. Each session is initialized with a target grid and a blank working grid. Your goal is to run commands until the user's request has been satisfied. Every time a command exits, the shell's daemon will show you an image of the working grid.`;
+  const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. Each session is initialized with a target grid and a blank working grid. Your goal is to run commands to transform the working grid into the target grid. Every time a command exits, the shell's daemon will provide feedback.`;
 
   const session = createSession({
-    taskId: "micro-solid-grids",
+    taskId: "micro-x-grids",
     maxIterations: 100,
     targetGrid: input,
     workingGrid: workingGrid,
@@ -120,221 +216,31 @@ const main = async () => {
     path: getInputGridPath({ session }),
   });
 
-  // one point, x, first row, last column, 2x2 square
-
-  const onePointGrid = createGrid({
-    height: GRID_SIZE,
-    width: GRID_SIZE,
-    color: "black",
-  });
-
-  const onePointCells: Array<{ x: number; y: number }> = [{ x: 0, y: 0 }];
-
-  for (const cell of onePointCells) {
-    setCellColor({
-      grid: onePointGrid,
-      x: cell.x,
-      y: cell.y,
-      color: "red",
-    });
-  }
-
-  const onePointGridImage = await getImage({ grid: onePointGrid });
-
-  await writeImage({
-    image: onePointGridImage.image,
-    path: "./data/one-point-grid.png",
-  });
-
-  const onePointGridToolCall = `setCellsToRed(${JSON.stringify({ cells: onePointCells }, null, 2)});`;
-
-  const xGrid = createGrid({
-    height: GRID_SIZE,
-    width: GRID_SIZE,
-    color: "black",
-  });
-
-  const xCells: Array<{ x: number; y: number }> = [
-    { x: 2, y: 2 },
-    { x: 3, y: 3 },
-    { x: 4, y: 4 },
-    { x: 4, y: 2 },
-    { x: 2, y: 4 },
-  ];
-
-  for (const cell of xCells) {
-    setCellColor({
-      grid: xGrid,
-      x: cell.x,
-      y: cell.y,
-      color: "red",
-    });
-  }
-
-  const xGridImage = await getImage({ grid: xGrid });
-
-  await writeImage({
-    image: xGridImage.image,
-    path: "./data/x-grid.png",
-  });
-
-  const xGridToolCall = `setCellsToRed(${JSON.stringify({ cells: xCells }, null, 2)});`;
-
-  const firstRowGrid = createGrid({
-    height: GRID_SIZE,
-    width: GRID_SIZE,
-    color: "black",
-  });
-
-  const firstRowCells: Array<{ x: number; y: number }> = [
-    { x: 0, y: 0 },
-    { x: 1, y: 0 },
-    { x: 2, y: 0 },
-    { x: 3, y: 0 },
-    { x: 4, y: 0 },
-    { x: 5, y: 0 },
-    { x: 6, y: 0 },
-    { x: 7, y: 0 },
-  ];
-
-  for (const cell of firstRowCells) {
-    setCellColor({
-      grid: firstRowGrid,
-      x: cell.x,
-      y: cell.y,
-      color: "red",
-    });
-  }
-
-  const firstRowGridImage = await getImage({ grid: firstRowGrid });
-
-  await writeImage({
-    image: firstRowGridImage.image,
-    path: "./data/first-row-grid.png",
-  });
-
-  const firstRowGridToolCall = `setCellsToRed(${JSON.stringify({ cells: firstRowCells }, null, 2)});`;
-
-  const lastColumnGrid = createGrid({
-    height: GRID_SIZE,
-    width: GRID_SIZE,
-    color: "black",
-  });
-
-  const lastColumnCells: Array<{ x: number; y: number }> = [
-    { x: 7, y: 0 },
-    { x: 7, y: 1 },
-    { x: 7, y: 2 },
-    { x: 7, y: 3 },
-    { x: 7, y: 4 },
-    { x: 7, y: 5 },
-    { x: 7, y: 6 },
-    { x: 7, y: 7 },
-  ];
-
-  for (const cell of lastColumnCells) {
-    setCellColor({
-      grid: lastColumnGrid,
-      x: cell.x,
-      y: cell.y,
-      color: "red",
-    });
-  }
-
-  const lastColumnGridImage = await getImage({ grid: lastColumnGrid });
-
-  await writeImage({
-    image: lastColumnGridImage.image,
-    path: "./data/last-column-grid.png",
-  });
-
-  const lastColumnGridToolCall = `setCellsToRed(${JSON.stringify({ cells: lastColumnCells }, null, 2)});`;
-
-  const twoByTwoSquareGrid = createGrid({
-    height: GRID_SIZE,
-    width: GRID_SIZE,
-    color: "black",
-  });
-
-  const twoByTwoSquareCells: Array<{ x: number; y: number }> = [
-    { x: 0, y: 0 },
-    { x: 0, y: 1 },
-    { x: 1, y: 0 },
-    { x: 1, y: 1 },
-  ];
-
-  for (const cell of twoByTwoSquareCells) {
-    setCellColor({
-      grid: twoByTwoSquareGrid,
-      x: cell.x,
-      y: cell.y,
-      color: "red",
-    });
-  }
-
-  const twoByTwoSquareGridImage = await getImage({ grid: twoByTwoSquareGrid });
-
-  await writeImage({
-    image: twoByTwoSquareGridImage.image,
-    path: "./data/two-by-two-square-grid.png",
-  });
-
-  const twoByTwoSquareGridToolCall = `setCellsToRed(${JSON.stringify({ cells: twoByTwoSquareCells }, null, 2)});`;
-
   const messages = [
     createChatSystemMessage({
       content: systemPrompt,
     }),
-    createChatTextMessage({
-      content: `Here's an example call that sets the top left cell to red. ${onePointGridToolCall}`,
-    }),
     createChatImageMessage({
-      text: "And here's the result of that call on a blank grid.",
-      dataUrl: onePointGridImage.dataUrl,
-    }),
-    createChatTextMessage({
-      content: `Here's an example call that sets an X pattern of cells to red. ${xGridToolCall}`,
-    }),
-    createChatImageMessage({
-      text: "And here's the result of that call on a blank grid.",
-      dataUrl: xGridImage.dataUrl,
-    }),
-    createChatTextMessage({
-      content: `Here's an example call that sets the first row of cells to red. ${firstRowGridToolCall}`,
-    }),
-    createChatImageMessage({
-      text: "And here's the result of that call on a blank grid.",
-      dataUrl: firstRowGridImage.dataUrl,
-    }),
-    createChatTextMessage({
-      content: `Here's an example call that sets the last column of cells to red. ${lastColumnGridToolCall}`,
-    }),
-    createChatImageMessage({
-      text: "And here's the result of that call on a blank grid.",
-      dataUrl: lastColumnGridImage.dataUrl,
-    }),
-    createChatTextMessage({
-      content: `Here's an example call that sets a 2x2 square of cells to red. ${twoByTwoSquareGridToolCall}`,
-    }),
-    createChatImageMessage({
-      text: "And here's the result of that call on a blank grid.",
-      dataUrl: twoByTwoSquareGridImage.dataUrl,
-    }),
-    createChatImageMessage({
-      text: "Ok, now that you've seen some examples, I've initialized the working grid. It's blank, here's an image of it.",
+      text: "Ok, I've initialized the working grid. It's blank, here's an image of it.",
+      // text: "Ok, now that you've seen some examples, I've initialized the working grid. It's blank, here's an image of it.",
       dataUrl: workingGridImage.dataUrl,
     }),
     createChatImageMessage({
-      text: "And here's an image of the target grid. Please recreate this grid by running commands.",
+      text: "And here's an image of the target grid.",
       dataUrl: inputImage.dataUrl,
+    }),
+    createChatTextMessage({
+      content:
+        "Before you run any commands, please describe to me the target grid.",
     }),
   ];
 
   session.messages.push(...messages);
 
   const experiment = createExperiment({
-    name: "Recreate solid grids",
-    description: "Input is a solid grid, output should be the same solid grid.",
+    name: "Recreate X grids",
+    description:
+      "Input is a solid grid with an X on it, output should be the same grid.",
     parameters: {
       model: MODEL,
       // THIS SHOULD NOT BE HARD-CODED, the value is wrong for most of the
@@ -342,7 +248,7 @@ const main = async () => {
       examples: 2,
       // Ah, this is wrong too. Most of these parameters are wrong in my
       // recorded exp.md files.
-      includeGridlines: true,
+      includeGridlines: false,
       returnEncoded: true,
       dimensions: {
         height: GRID_SIZE,
@@ -363,7 +269,7 @@ const main = async () => {
 
       const response = await openai.chat.completions.create({
         model: MODEL,
-        tools: [setColorRedTool.spec],
+        tools: session.tools.map((tool) => tool.spec),
         messages: session.messages,
       });
 
@@ -394,6 +300,7 @@ const main = async () => {
       );
 
       for (const toolCall of toolCalls) {
+        console.log(`Called: ${toolCall.function.name}`);
         session.numToolCalls++;
 
         let toolCallResult;
@@ -406,10 +313,18 @@ const main = async () => {
               toolCall.function.arguments,
             );
             break;
+          case "setCellsToBlack":
+            toolCallResult = setColorBlackTool.handler(
+              toolCall.function.arguments,
+            );
+            break;
           case "getDimensions":
             toolCallResult = getDimensionsTool.handler(
               toolCall.function.arguments,
             );
+            break;
+          case "setRedX":
+            toolCallResult = setRedXTool.handler(toolCall.function.arguments);
             break;
           default:
             throw createException({
@@ -541,6 +456,6 @@ const main = async () => {
   writeExperimentJson({ experiment });
 };
 
-for (let i = 0; i < 30; i++) {
+for (let i = 0; i < 10; i++) {
   await main();
 }

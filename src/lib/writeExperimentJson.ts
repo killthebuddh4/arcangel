@@ -1,11 +1,12 @@
 import { writeFile } from "fs/promises";
 import { Experiment } from "../types/Experiment.js";
 import { createException } from "./createException.js";
+import { getConfig } from "./getConfig.js";
 
 export const writeExperimentJson = async (args: { experiment: Experiment }) => {
   try {
     return await writeFile(
-      `./data/images/sessions/${args.experiment.session.id}/experiment.json`,
+      `./data/${getConfig().EXPERIMENT_ID}/${args.experiment.session.id}/experiment.json`,
       JSON.stringify(args.experiment, null, 2),
     );
   } catch {

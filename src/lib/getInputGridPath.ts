@@ -1,5 +1,6 @@
 import { Session } from "../types/Session.js";
+import { getConfig } from "./getConfig.js";
 
 export const getInputGridPath = (args: { session: Session }): string => {
-  return `./data/images/sessions/${args.session.id}/input.png`;
+  return `./data/${getConfig().EXPERIMENT_ID}/${args.session.id}/input.png`;
 };
