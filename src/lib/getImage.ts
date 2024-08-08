@@ -4,8 +4,11 @@ import { getCell } from "./getCell.js";
 import { getRgb } from "./getRgb.js";
 import { createException } from "./createException.js";
 
-const CELL_SIZE = 10;
+const CELL_SIZE = 40;
+const CELL_PADDING = 4;
+// const FONT_SIZE = 18;
 const I_SIZE = 512;
+// const font = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
 
 export const getImage = async (args: {
   grid: Grid;
@@ -14,48 +17,6 @@ export const getImage = async (args: {
 
   const xOffset = (I_SIZE - args.grid.width * CELL_SIZE) / 2;
   const yOffset = (I_SIZE - args.grid.height * CELL_SIZE) / 2;
-
-  for (
-    let x = xOffset;
-    x < xOffset + args.grid.width * CELL_SIZE;
-    x += CELL_SIZE
-  ) {
-    const font = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
-
-    image.print(
-      font,
-      x,
-      yOffset - 16,
-      {
-        text: String(Math.floor((x - xOffset) / CELL_SIZE)),
-        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
-      },
-      CELL_SIZE,
-      CELL_SIZE,
-    );
-  }
-
-  for (
-    let y = yOffset;
-    y < yOffset + args.grid.height * CELL_SIZE;
-    y += CELL_SIZE
-  ) {
-    const font = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
-
-    image.print(
-      font,
-      xOffset - 16,
-      y,
-      {
-        text: String(Math.floor((y - yOffset) / CELL_SIZE)),
-        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-        alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
-      },
-      CELL_SIZE,
-      CELL_SIZE,
-    );
-  }
 
   for (let y = 0; y < args.grid.height; y++) {
     for (let x = 0; x < args.grid.width; x++) {
@@ -77,10 +38,10 @@ export const getImage = async (args: {
       }
 
       image.scan(
-        xOffset + x * CELL_SIZE,
-        yOffset + y * CELL_SIZE,
-        CELL_SIZE,
-        CELL_SIZE,
+        xOffset + CELL_PADDING + x * CELL_SIZE,
+        yOffset + CELL_PADDING + y * CELL_SIZE,
+        CELL_SIZE - 2 * CELL_PADDING,
+        CELL_SIZE - 2 * CELL_PADDING,
         (_x, _y, idx) => {
           image.bitmap.data[idx + 0] = rgb.data[0];
           image.bitmap.data[idx + 1] = rgb.data[1];

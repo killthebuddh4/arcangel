@@ -1,44 +1,37 @@
 import { getResultSummary } from "./lib/getResultSummary.js";
-import { readSessions } from "./lib/readExperiments.js";
+import { readSessions } from "./lib/readSessions.js";
 import { Chalk } from "chalk";
-import { getConfig } from "./lib/getConfig.js";
+import { getDiff } from "./lib/getDiff.js";
 
 const chalk = new Chalk();
 
 const main = async () => {
-  const sessions = await readSessions({
-    experimentId: getConfig().EXPERIMENT_ID,
-  });
+  const sessions = await readSessions();
 
   for (const session of sessions) {
-    const lastMessage =
-      session.session.messages[session.session.messages.length - 1];
+    const display = `Session ID: ${session.id}\nLast Message: ${JSON.stringify(session.history[session.history.length - 1], null, 2)}\n`;
 
-    let progress: number;
-    if (session.history.length === 0) {
-      progress = 0;
+    if (session.exit === null) {
+      const diff = getDiff({
+        lhs: session.environment.input,
+        rhs: session.memory.grid,
+      });
+
+      if (diff.diff.length === 0) {
+        console.log(chalk.green(display));
+      } else {
+        console.log(chalk.yellow(display));
+      }
     } else {
-      progress = session.history[session.history.length - 1].progress;
-    }
-
-    const display = `Session ID: ${session.session.id}\nProgress: ${progress}\nLast Message: ${JSON.stringify(lastMessage.content, null, 2)}\n`;
-
-    if (progress === 100) {
-      console.log(chalk.green(display));
-    } else {
-      console.log(chalk.yellow(display));
-    }
-
-    if (session.session.error !== null) {
-      console.log(chalk.red(`Error: ${session.session.error}`));
+      if (!session.exit.ok) {
+        console.log(chalk.red(display));
+        console.log(chalk.red(JSON.stringify(session.exit.exception, null, 2)));
+      }
     }
   }
 
   try {
-    const summary = await getResultSummary({
-      experimentId: getConfig().EXPERIMENT_ID,
-    });
-
+    const summary = await getResultSummary();
     console.log("Summary:");
     console.log(JSON.stringify(summary, null, 2));
   } catch (e) {

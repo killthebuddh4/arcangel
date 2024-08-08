@@ -1,461 +1,300 @@
-import { z } from "zod";
 import { createGrid } from "./lib/createGrid.js";
-import { createTool } from "./lib/createTool.js";
 import { getOpenAi } from "./lib/getOpenAi.js";
-// import { getImage } from "./lib/getImage.js";
-import { getDetailedImage as getImage } from "./lib/getDetailedImage.js";
+import { getImage } from "./lib/getImage.js";
 import { createChatSystemMessage } from "./lib/createChatSystemMessage.js";
 import { createChatImageMessage } from "./lib/createChatImageMessage.js";
 import { getToolCalls } from "./lib/getToolCalls.js";
-import { writeImage } from "./lib/writeImage.js";
 import { createChatToolResponseMessage } from "./lib/createChatToolResponseMessage.js";
-import { createSession } from "./lib/createSession.js";
-import { setCellColor } from "./lib/setCellColor.js";
 import { createChatToolCallMessage } from "./lib/createChatToolCallMessage.js";
-import { getWorkingGridPath } from "./lib/getWorkingGridPath.js";
-import { getInputGridPath } from "./lib/getInputGridPath.js";
-import { Chalk } from "chalk";
-import { getDiff } from "./lib/getDiff.js";
-import { createExperiment } from "./lib/createExperiment.js";
-import { getTokenEstimate } from "./lib/getTokenEstimate.js";
-import { writeExperimentJson } from "./lib/writeExperimentJson.js";
 import { createChatAssistantMessage } from "./lib/createChatAssistantMessage.js";
 import { isException } from "./lib/isException.js";
 import { createException } from "./lib/createException.js";
-import { createChatTextMessage } from "./lib/createChatTextMessage.js";
-
-const chalk = new Chalk();
+import { v4 as uuidv4 } from "uuid";
+import * as Session from "./types/Session.js";
+import { ChatMessage } from "./types/ChatMessage.js";
+import { getGetDimensionsTool } from "./tools/getGetDimensionsTool.js";
+import { getSetColorRedTool } from "./tools/getSetColorRedTool.js";
+import { writeImage } from "./lib/writeImage.js";
+import { writeSession } from "./lib/writeSession.js";
+import { getConfig } from "./lib/getConfig.js";
 
 const openai = getOpenAi();
 
-const MODEL = "gpt-4o";
+const getParameters = () => {
+  return {
+    model: "gpt-4o-mini",
+    gridSize: 8,
+  };
+};
 
-const GRID_SIZE = 8;
+const getEnvironment = async (args: {
+  memory: Session.Memory;
+}): Promise<Session.Environment> => {
+  return {
+    id: uuidv4(),
+    type: "environment",
+    input: createGrid({
+      height: getParameters().gridSize,
+      width: getParameters().gridSize,
+      color: "red",
+    }),
+    tools: [
+      getGetDimensionsTool({
+        workingGrid: args.memory.grid,
+      }),
+      getSetColorRedTool({
+        workingGrid: args.memory.grid,
+      }),
+    ],
+  };
+};
+
+const getInstructions = async (args: {
+  environment: Session.Environment;
+  memory: Session.Memory;
+}): Promise<Session.Instructions> => {
+  const workingGridImage = await getImage({ grid: args.memory.grid });
+  const inputImage = await getImage({ grid: args.environment.input });
+  const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. Each session is initialized with a target grid and a blank working grid. Your goal is to run commands to transform the working grid into the target grid. Every time a command exits, the shell's daemon will provide feedback.`;
+
+  return {
+    id: uuidv4(),
+    type: "instructions",
+    messages: [
+      createChatSystemMessage({
+        content: systemPrompt,
+      }),
+      createChatImageMessage({
+        text: "Ok, I've initialized the working grid. It's blank, here's an image of it.",
+        dataUrl: workingGridImage.dataUrl,
+      }),
+      createChatImageMessage({
+        text: "And here's an image of the target grid.",
+        dataUrl: inputImage.dataUrl,
+      }),
+    ],
+  };
+};
+
+const getOptions = (): Session.Config => {
+  return {
+    id: uuidv4(),
+    type: "options",
+    model: getParameters().model,
+    maxSteps: 10,
+    maxTime: 10 * 60 * 1000, // 10 minutes
+    maxToolCalls: 100,
+    maxMessages: 100,
+    maxTokens: 1000000,
+  };
+};
+
+const getMemory = (): Session.Memory => {
+  return {
+    id: uuidv4(),
+    type: "memory",
+    grid: createGrid({
+      height: 8,
+      width: 8,
+      color: "black",
+    }),
+  };
+};
+
+const getMessages = (args: { session: Session.Session }): ChatMessage[] => {
+  const messages: ChatMessage[] = [];
+  messages.push(...args.session.instructions.messages);
+  for (const history of args.session.history) {
+    messages.push(...history.messages);
+  }
+  return messages;
+};
+
+const getResponse = async (args: {
+  session: Session.Session;
+}): Promise<Session.Response> => {
+  return openai.chat.completions.create({
+    model: getParameters().model,
+    messages: getMessages({ session: args.session }),
+    tools: args.session.environment.tools.map((tool) => tool.spec),
+  });
+};
+
+const getGeneration = async (args: {
+  session: Session.Session;
+  response: Session.Response;
+}): Promise<Session.Generation | Session.Fault> => {
+  const generation: Omit<Session.Generation, "code"> = {
+    id: uuidv4(),
+    type: "generation",
+    time: Date.now(),
+    messages: [],
+  };
+
+  const toolCalls = getToolCalls({ completion: args.response });
+
+  if (toolCalls === undefined) {
+    if (args.response.choices[0].message.content === null) {
+      throw new Error(`Response is not a tool call or an assistant message.`);
+    }
+
+    generation.messages.push(
+      createChatAssistantMessage({
+        content: args.response.choices[0].message.content,
+      }),
+    );
+
+    return {
+      ...generation,
+      code: "WITHOUT_TOOL_CALLS",
+    };
+  }
+
+  generation.messages.push(
+    createChatToolCallMessage({
+      content: args.response.choices[0].message.content,
+      toolCalls,
+    }),
+  );
+
+  for (const toolCall of toolCalls) {
+    const tool = args.session.environment.tools.find(
+      (tool) => tool.spec.function.name === toolCall.function.name,
+    );
+
+    if (tool === undefined) {
+      throw createException({
+        code: "TOOL_CALL_INVALID_NAME",
+        reason: `Tool call has invalid name: ${toolCall.function.name}`,
+      });
+    }
+
+    const toolCallResult = tool.handler(toolCall.function.arguments);
+
+    generation.messages.push(
+      createChatToolResponseMessage({
+        toolCallId: toolCall.id,
+        name: toolCall.function.name,
+        content: JSON.stringify(toolCallResult, null, 2),
+      }),
+    );
+  }
+
+  return {
+    ...generation,
+    code: "WITH_TOOL_CALLS",
+  };
+};
+
+const getFeedback = async (args: {
+  session: Session.Session;
+  generation: Session.Generation | Session.Fault;
+}): Promise<Session.Feedback | Session.Fault> => {
+  const feedback: Omit<Session.Feedback, "code"> = {
+    id: `${Date.now()}-${uuidv4()}`,
+    type: "feedback",
+    time: Date.now(),
+    messages: [],
+  };
+
+  const image = await getImage({ grid: args.session.memory.grid });
+
+  feedback.messages.push(
+    createChatImageMessage({
+      text: "Here's the most recent image of the working grid.",
+      dataUrl: image.dataUrl,
+    }),
+  );
+
+  return {
+    ...feedback,
+    code: "SHOW_WORKING_GRID",
+  };
+};
 
 const main = async () => {
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
-  const input = createGrid({
-    height: GRID_SIZE,
-    width: GRID_SIZE,
-    color: "black",
-  });
+  const memory = getMemory();
+  const environment = await getEnvironment({ memory });
+  const instructions = await getInstructions({ environment, memory });
+  const options = getOptions();
 
-  const xCells: Array<{ x: number; y: number }> = [
-    { x: 2, y: 2 },
-    { x: 3, y: 3 },
-    { x: 4, y: 4 },
-    { x: 4, y: 2 },
-    { x: 2, y: 4 },
-  ];
+  const session: Session.Session = {
+    id: uuidv4(),
+    environment,
+    memory,
+    instructions,
+    config: options,
+    history: [],
+    exit: null,
+  };
 
-  for (const cell of xCells) {
-    setCellColor({
-      grid: input,
-      x: cell.x,
-      y: cell.y,
-      color: "red",
+  const takeSnapshot = async (args: { opts?: { isFinal?: boolean } }) => {
+    const inputImage = await getImage({ grid: session.environment.input });
+
+    await writeImage({
+      image: inputImage.image,
+      path: `./data/${getConfig().EXPERIMENT_ID}/${session.id}/input.png`,
     });
-  }
 
-  const workingGrid = createGrid({
-    height: input.height,
-    width: input.width,
-  });
+    const workingGridImage = await getImage({ grid: session.memory.grid });
 
-  const getDimensionsTool = createTool({
-    name: "getDimensions",
-    description: "Returns the dimensions of the grid.",
-    inputSchema: z.object({}),
-    outputSchema: z.object({
-      height: z.number(),
-      width: z.number(),
-      minX: z.number(),
-      maxX: z.number(),
-      minY: z.number(),
-      maxY: z.number(),
-    }),
-    handler: () => {
-      return {
-        height: workingGrid.height,
-        width: workingGrid.width,
-        minX: 0,
-        maxX: workingGrid.width - 1,
-        minY: 0,
-        maxY: workingGrid.height - 1,
-      };
-    },
-  });
+    await writeImage({
+      image: workingGridImage.image,
+      path: `./data/${getConfig().EXPERIMENT_ID}/${session.id}/${args?.opts?.isFinal ? "result" : session.history.length.toString()}.png`,
+    });
 
-  const setColorBlackTool = createTool({
-    name: "setCellsToBlack",
-    description: "Sets the color of the targeted cells to black.",
-    inputSchema: z.object({
-      cells: z.array(
-        z.object({
-          x: z.number(),
-          y: z.number(),
-        }),
-      ),
-    }),
-    outputSchema: z.object({
-      // TODO We could return something like the number of cells written vs the
-      // number of cells that were already red.
-      success: z.boolean(),
-    }),
-    handler: (params): { success: boolean } => {
-      for (const cell of params.cells) {
-        setCellColor({
-          grid: workingGrid,
-          x: cell.x,
-          y: cell.y,
-          color: "black",
-        });
-      }
+    await writeSession({
+      session,
+      suffix: args?.opts?.isFinal
+        ? "result"
+        : session.history.length.toString(),
+    });
+  };
 
-      return { success: true };
-    },
-  });
-
-  const setColorRedTool = createTool({
-    name: "setCellsToRed",
-    description: "Sets the color of the targeted cells to red.",
-    inputSchema: z.object({
-      cells: z.array(
-        z.object({
-          x: z.number(),
-          y: z.number(),
-        }),
-      ),
-    }),
-    outputSchema: z.object({
-      // TODO We could return something like the number of cells written vs the
-      // number of cells that were already red.
-      success: z.boolean(),
-    }),
-    handler: (params): { success: boolean } => {
-      for (const cell of params.cells) {
-        setCellColor({
-          grid: workingGrid,
-          x: cell.x,
-          y: cell.y,
-          color: "red",
-        });
-      }
-
-      return { success: true };
-    },
-  });
-
-  const setRedXTool = createTool({
-    name: "setRedX",
-    description:
-      "Colors an X pattern, centered at (x, y), to red. The size parameter controls how many cells each arm of the X has, not including the center.",
-    inputSchema: z.object({
-      x: z.number(),
-      y: z.number(),
-      size: z.number(),
-    }),
-    outputSchema: z.object({
-      // TODO We could return something like the number of cells written vs the
-      // number of cells that were already red.
-      success: z.boolean(),
-    }),
-    handler: (params): { success: boolean } => {
-      for (let i = 0; i <= params.size; i++) {
-        setCellColor({
-          grid: workingGrid,
-          x: params.x + i,
-          y: params.y + i,
-          color: "red",
-        });
-
-        setCellColor({
-          grid: workingGrid,
-          x: params.x - i,
-          y: params.y + i,
-          color: "red",
-        });
-
-        setCellColor({
-          grid: workingGrid,
-          x: params.x + i,
-          y: params.y - i,
-          color: "red",
-        });
-
-        setCellColor({
-          grid: workingGrid,
-          x: params.x - i,
-          y: params.y - i,
-          color: "red",
-        });
-      }
-
-      return { success: true };
-    },
-  });
-
-  // TODO: You just remembered that the openai api supports user "names", the user could be "daemon".
-  const systemPrompt = `You are operating a shell that exposes commands for working with 2D grids of cells. Each session is initialized with a target grid and a blank working grid. Your goal is to run commands to transform the working grid into the target grid. Every time a command exits, the shell's daemon will provide feedback.`;
-
-  const session = createSession({
-    taskId: "micro-x-grids",
-    maxIterations: 100,
-    targetGrid: input,
-    workingGrid: workingGrid,
-    tools: [setColorRedTool, getDimensionsTool],
-  });
-
-  const workingGridImage = await getImage({ grid: session.workingGrid });
-
-  const inputImage = await getImage({ grid: input });
-
-  await writeImage({
-    image: inputImage.image,
-    path: getInputGridPath({ session }),
-  });
-
-  const messages = [
-    createChatSystemMessage({
-      content: systemPrompt,
-    }),
-    createChatImageMessage({
-      text: "Ok, I've initialized the working grid. It's blank, here's an image of it.",
-      // text: "Ok, now that you've seen some examples, I've initialized the working grid. It's blank, here's an image of it.",
-      dataUrl: workingGridImage.dataUrl,
-    }),
-    createChatImageMessage({
-      text: "And here's an image of the target grid.",
-      dataUrl: inputImage.dataUrl,
-    }),
-    createChatTextMessage({
-      content:
-        "Before you run any commands, please describe to me the target grid.",
-    }),
-  ];
-
-  session.messages.push(...messages);
-
-  const experiment = createExperiment({
-    name: "Recreate X grids",
-    description:
-      "Input is a solid grid with an X on it, output should be the same grid.",
-    parameters: {
-      model: MODEL,
-      // THIS SHOULD NOT BE HARD-CODED, the value is wrong for most of the
-      // experiments now.
-      examples: 2,
-      // Ah, this is wrong too. Most of these parameters are wrong in my
-      // recorded exp.md files.
-      includeGridlines: false,
-      returnEncoded: true,
-      dimensions: {
-        height: GRID_SIZE,
-        width: GRID_SIZE,
-      },
-    },
-    session,
-  });
-
-  while (session.currentIteration < session.maxIterations) {
+  while (session.history.length < session.config.maxSteps) {
     try {
-      const workingGridImage = await getImage({ grid: session.workingGrid });
+      await takeSnapshot({});
 
-      await writeImage({
-        image: workingGridImage.image,
-        path: getWorkingGridPath({ session }),
-      });
+      const response = await getResponse({ session });
 
-      const response = await openai.chat.completions.create({
-        model: MODEL,
-        tools: session.tools.map((tool) => tool.spec),
-        messages: session.messages,
-      });
+      const generation = await getGeneration({ session, response });
 
-      const toolCalls = getToolCalls({ completion: response });
+      session.history.push(generation);
 
-      if (toolCalls === undefined) {
-        if (response.choices[0].message.content === null) {
-          throw new Error(
-            `Response is not a tool call or an assistant message.`,
-          );
-        }
+      // TODO WE SHOULD PROBABLY HAVE A handleGeneration STEP.
 
-        session.messages.push(
-          createChatAssistantMessage({
-            content: response.choices[0].message.content,
-          }),
-        );
-        // TODO, we assume the model is just done here, but we don't need to
-        // assume that.
-        break;
-      }
+      const feedback = await getFeedback({ session, generation });
 
-      session.messages.push(
-        createChatToolCallMessage({
-          content: response.choices[0].message.content,
-          toolCalls,
-        }),
-      );
+      session.history.push(feedback);
 
-      for (const toolCall of toolCalls) {
-        console.log(`Called: ${toolCall.function.name}`);
-        session.numToolCalls++;
-
-        let toolCallResult;
-        switch (toolCall.function.name) {
-          // TODO Keep track of how many extra cells are set in the process. I
-          // feel like too many extras is really not good because in many cases
-          // we won't have idempotent (or whatever) tools.
-          case "setCellsToRed":
-            toolCallResult = setColorRedTool.handler(
-              toolCall.function.arguments,
-            );
-            break;
-          case "setCellsToBlack":
-            toolCallResult = setColorBlackTool.handler(
-              toolCall.function.arguments,
-            );
-            break;
-          case "getDimensions":
-            toolCallResult = getDimensionsTool.handler(
-              toolCall.function.arguments,
-            );
-            break;
-          case "setRedX":
-            toolCallResult = setRedXTool.handler(toolCall.function.arguments);
-            break;
-          default:
-            throw createException({
-              code: "TOOL_CALL_INVALID_NAME",
-              reason: `Tool call has invalid name: ${toolCall.function.name}`,
-            });
-        }
-
-        session.messages.push(
-          createChatToolResponseMessage({
-            toolCallId: toolCall.id,
-            name: toolCall.function.name,
-            content: JSON.stringify(toolCallResult, null, 2),
-          }),
-        );
-      }
-
-      const image = await getImage({ grid: session.workingGrid });
-
-      await writeImage({
-        image: image.image,
-        path: getWorkingGridPath({ session }),
-      });
-
-      session.messages.push(
-        createChatImageMessage({
-          text: "Here's the most recent image of the working grid.",
-          dataUrl: image.dataUrl,
-        }),
-      );
-
-      const diff = getDiff({
-        lhs: session.targetGrid,
-        rhs: session.workingGrid,
-      });
-
-      const size = session.targetGrid.height * session.targetGrid.width;
-
-      if (diff.diff.length > size) {
-        throw new Error("Diff length is greater than grid size.");
-      }
-
-      session.messages.push(
-        createChatTextMessage({
-          // TODO Not going to give any details here because I want to see how much this improves quality.
-          content: `After the last command, the working grid has ${diff.diff.length} cells that differ from the target grid.`,
-        }),
-      );
-
-      const progress = Math.floor(((size - diff.diff.length) / size) * 100);
-
-      const numTokens = session.messages.reduce((acc, message) => {
-        const estimate = getTokenEstimate({ message });
-        return acc + estimate;
-      }, 0);
-
-      experiment.history.push({
-        numTokens,
-        numToolCalls: session.numToolCalls,
-        progress,
-      });
-
-      let stalled = true;
-      if (experiment.history.length < 5) {
-        stalled = false;
-      } else {
-        const tail = experiment.history.slice(-5);
-        for (let i = 0; i < tail.length - 1; i++) {
-          const prev = tail[i];
-          const next = tail[i + 1];
-          if (prev.progress !== next.progress) {
-            stalled = false;
-            break;
-          }
-        }
-      }
-
-      const randomIncompleteCell =
-        diff.diff[Math.floor(Math.random() * diff.diff.length)];
-
-      if (stalled) {
-        session.messages.push(
-          createChatTextMessage({
-            content: `Progress seems to have stalled at ${diff.diff.length} cells different from the target grid. That indicates that you keep executing the same command. One example of a cell that is different is the cell at (${randomIncompleteCell.x}, ${randomIncompleteCell.y}).`,
-          }),
-        );
-      }
-
-      let veryStalled = true;
-      if (experiment.history.length < 10) {
-        veryStalled = false;
-      } else {
-        const tail = experiment.history.slice(-10);
-        for (let i = 0; i < tail.length - 1; i++) {
-          const prev = tail[i];
-          const next = tail[i + 1];
-          if (prev.progress !== next.progress) {
-            veryStalled = false;
-            break;
-          }
-        }
-      }
-
-      if (veryStalled) {
-        throw createException({
-          code: "PROGRESS_STALLED",
-          reason: `The has stalled at length ${session.currentIteration}.`,
-        });
-      }
-
-      session.currentIteration++;
-
-      console.log(
-        (session.currentIteration % 2 === 0 ? chalk.green : chalk.yellow)(
-          `Session: ${session.id} Iteration: ${session.currentIteration}, Progress: ${progress}%`,
-        ),
-      );
+      // TODO WE SHOULD PROBABLY HAVE A handleFeedback STEP.
     } catch (err) {
-      if (isException(err)) {
-        session.error = `CODE: ${err.code}, REASON: ${err.reason}`;
+      if (!isException(err)) {
+        session.exit = {
+          id: uuidv4(),
+          time: Date.now(),
+          ok: false,
+          exception: createException({
+            code: "UNKNOWN_EXCEPTION",
+            reason: JSON.stringify(err, Object.getOwnPropertyNames(err)),
+          }),
+        };
       } else {
-        session.error = `UNHANDLED ERROR: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`;
+        session.exit = {
+          id: uuidv4(),
+          time: Date.now(),
+          ok: false,
+          exception: err,
+        };
       }
 
       break;
     }
   }
 
-  session.elapsedTime = Date.now() - session.startTime;
-
-  writeExperimentJson({ experiment });
+  await takeSnapshot({ opts: { isFinal: true } });
 };
 
 for (let i = 0; i < 10; i++) {

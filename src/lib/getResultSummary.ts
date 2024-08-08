@@ -1,12 +1,37 @@
-import { Experiment } from "../types/Experiment.js";
-import { readSessions } from "./readExperiments.js";
+import { Session } from "../types/Session.js";
+import { readSessions } from "./readSessions.js";
 import { createException } from "./createException.js";
+import { getDiff } from "./getDiff.js";
 
-export const getResultSummary = async (args: { experimentId: string }) => {
-  const sessions = await readSessions({
-    experimentId: args.experimentId,
-  });
+const getNumMessages = (session: Session) => {
+  let numMessages = 0;
+  numMessages += session.instructions.messages.length;
+  for (const history of session.history) {
+    numMessages += history.messages.length;
+  }
+  return numMessages;
+};
 
+const getNumToolCalls = (session: Session, opts?: { name?: string }) => {
+  let numToolCalls = 0;
+
+  for (const history of session.history) {
+    if (history.type === "feedback") {
+      for (const message of history.messages) {
+        if (message.role === "tool") {
+          if (typeof opts?.name === undefined || opts?.name === message.name) {
+            numToolCalls++;
+          }
+        }
+      }
+    }
+  }
+
+  return numToolCalls;
+};
+
+export const getResultSummary = async () => {
+  const sessions = await readSessions();
   const successes = sessions.filter((e) => getProgress(e) === 100);
   const failures = sessions.filter((e) => getProgress(e) < 100);
   const numExperiments = sessions.length;
@@ -22,71 +47,41 @@ export const getResultSummary = async (args: { experimentId: string }) => {
     failures.length;
 
   const averageNumMessages =
-    sessions.reduce(
-      (acc, experiment) => acc + experiment.session.messages.length,
-      0,
-    ) / numExperiments;
+    sessions.reduce((acc, experiment) => acc + getNumMessages(experiment), 0) /
+    numExperiments;
 
   const averageSuccessMessages =
-    successes.reduce(
-      (acc, experiment) => acc + experiment.session.messages.length,
-      0,
-    ) / numSuccessful;
+    successes.reduce((acc, experiment) => acc + getNumMessages(experiment), 0) /
+    numSuccessful;
 
   const averageFailureMessages =
-    failures.reduce(
-      (acc, experiment) => acc + experiment.session.messages.length,
-      0,
-    ) / numFailures;
+    failures.reduce((acc, experiment) => acc + getNumMessages(experiment), 0) /
+    numFailures;
 
   const averageToolCalls =
     sessions.reduce((acc, experiment) => {
-      if (experiment.history.length === 0) {
-        return acc;
-      }
-
-      return (
-        acc + experiment.history[experiment.history.length - 1].numToolCalls
-      );
+      return acc + getNumToolCalls(experiment);
     }, 0) / numExperiments;
 
   const averageFailureToolCalls =
     failures.reduce((acc, experiment) => {
-      if (experiment.history.length === 0) {
-        return acc;
-      }
-
-      return (
-        acc + experiment.history[experiment.history.length - 1].numToolCalls
-      );
+      return acc + getNumToolCalls(experiment);
     }, 0) / numFailures;
 
   const averageSuccessToolCalls =
     successes.reduce((acc, experiment) => {
-      if (experiment.history.length === 0) {
-        return acc;
-      }
-
-      return (
-        acc + experiment.history[experiment.history.length - 1].numToolCalls
-      );
+      return acc + getNumToolCalls(experiment);
     }, 0) / numSuccessful;
 
   const numToolCallsByName = sessions.reduce(
     (acc, experiment) => {
-      if (experiment.history.length === 0) {
-        return acc;
-      }
-
-      for (const message of experiment.session.messages) {
-        if (message.role === "tool") {
-          const toolName = message.name;
-
-          if (toolName in acc) {
-            acc[toolName] += 1;
-          } else {
-            acc[toolName] = 1;
-          }
+      for (const name of experiment.environment.tools.map(
+        (t) => t.spec.function.name,
+      )) {
+        if (name in acc) {
+          acc[name] += getNumToolCalls(experiment, { name });
+        } else {
+          acc[name] = getNumToolCalls(experiment, { name });
         }
       }
 
@@ -95,37 +90,10 @@ export const getResultSummary = async (args: { experimentId: string }) => {
     {} as Record<string, number>,
   );
 
-  const averageSuccessElapsedTime =
-    successes.reduce((acc, experiment) => {
-      if (experiment.session.elapsedTime === null) {
-        throw createException({
-          code: "INVALID_ELAPSED_TIME",
-          reason: `Elapsed time is null on a successful experiment: sessionId: ${experiment.session.id}`,
-        });
-      }
-
-      return acc + experiment.session.elapsedTime;
-    }, 0) / numSuccessful;
-
   let model: string | null = null;
 
   for (const experiment of sessions) {
-    let found: string;
-    try {
-      found = (experiment.parameters as { model: string }).model;
-    } catch {
-      throw createException({
-        code: "FAILED_TO_GET_MODEL",
-        reason: `Failed to get model from experiment`,
-      });
-    }
-
-    if (typeof found !== "string") {
-      throw createException({
-        code: "INVALID_MODEL",
-        reason: `Model is not a string: ${found}`,
-      });
-    }
+    const found = experiment.config.model;
 
     if (model === null) {
       model = found;
@@ -143,7 +111,6 @@ export const getResultSummary = async (args: { experimentId: string }) => {
     numExperiments,
     numSuccessful,
     numFailures,
-    averageSuccessElapsedTime,
     averageProgress,
     averageFailureProgress,
     averageNumMessages,
@@ -157,12 +124,14 @@ export const getResultSummary = async (args: { experimentId: string }) => {
   };
 };
 
-const getProgress = (experiment: Experiment) => {
-  if (experiment.history.length === 0) {
-    return 0;
-  }
+const getProgress = (session: Session) => {
+  const diff = getDiff({
+    lhs: session.environment.input,
+    rhs: session.memory.grid,
+  });
 
-  const lastEntry = experiment.history[experiment.history.length - 1];
+  const size =
+    session.environment.input.height * session.environment.input.width;
 
-  return lastEntry.progress;
+  return ((size - diff.diff.length) / size) * 100;
 };
