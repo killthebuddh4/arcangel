@@ -130,8 +130,100 @@ do |point|
 end
 
 
+kw
+  exp
+  exp
+  exp
+end
 
-def:
+kw  
+  exp
+name
+  exp
+name
+  exp
+end
+
+(a: Type, b: Type, c: Type): Type => {
+  return ...
+}
+
+
+def
+set
+func
+call
+struct
+sequence
+read
+write
+map
+filter
+reduce
+if
+and
+or
+switch
+
+switch
+  if 
+    x === 10
+  then
+    ...
+  else
+    ...
+  end
+
+  if 
+    x === 10
+  then
+    ...
+  else
+    ...
+  end
+
+end
+
+
+case y => y < 0:
+  ...
+case z => z > 0:
+  ...
+end
+
+map
+  numbers
+
+  do
+
+
+  end
+end
+
+filter
+  numbers
+
+  do
+
+
+  end
+end
+
+reduce
+  numbers
+
+  func
+
+  end
+
+  init
+end
+
+
+
+
+
+def
   X
 with:
   Field
@@ -140,16 +232,464 @@ select:
   (Field, P) -> boolean
 end
 
--> methods
+kw1 exp
+kw2 exp
+kw3 exp
+end
+
+SIGNATURE IS DIFF
+
+fn signature
+
+end
+
+CALL DATA IS DIFF
+
+def
+  x
+  exp
+end
+
+set
+  x
+  exp
+end
+
+func signature
+  ...
+end
+
+call f
+  a exp
+  b exp
+  ...
+end
+
+struct
+  key k value v end
+  key k2 value v2 end
+  ...
+end
+
+sequence
+  exp 
+  exp
+  exp
+  ...
+end
+
+read
+  o
+  v
+end
+
+write
+  o
+  k
+  v
+end
+
+
+
+
+@ name
+  a1 exp1
+  a2 exp2
+  a3 exp3
+end
+
+seq
+  exp
+  exp
+  exp
+  exp
+  exp
+  ...
+end
+
+def
+  obj
+struct
+  key
+    x
+  value
+    ...
+  end
+
+  key
+    y
+  value
+    ...
+  end
+end
+
+read x v end
+
+write x vvv end
+
+struct
+  key
+    x
+  value
+    y
+  end
+
+
+  key
+    x
+  value
+    z
+  end
+end
+
+sequence
+
+read
+  o
+key
+  k
+end
+
+write
+  o
+key
+  y
+value
+  ...
+end
+
+read
+  structObj or seqObj
+do
+  key
+    whatever
+  value
+    thing
+  end
+
+  key
+    other
+  value
+    other value
+  end
+end
+
+write
+  structObj or seqObj
+do
+  key
+    whatever
+  value
+    thing
+  end
+
+  key
+    other
+  value
+    other value
+  end
+end
+
+
+
+def
+  name
+do
+  ...
+end
+
+kw exp
+kw exp
+kw exp
+kw exp
+...
+
+do
+  exp
+  exp
+  exp
+  ...
+end
+
+and
+  exp
+  exp
+  exp
+  ...
+end
+
+or
+  exp
+  exp
+  exp
+  ...
+end
+
+
+
+do
+  def
+    piped
+  do
+    map
+      y
+    do
+      double
+    end
+  end
+
+  let
+    piped
+  do
+    map
+      piped
+    do
+      decrement
+    end
+  end
+
+  let
+    piped
+  do
+    reduce
+      piped
+    do
+      sum
+    end
+  end
+end
+
+
+
+
+
+
+with
+  thing
+map
+  y
+do
+  ...
+filter
+  thing
+do
+  ...
+end
 
 
 - Point := (x, y, z)
 - Set := Point, Point, ...
-- Ordering := Set => Point[]
+- Iterator := Set -> Sequence
+- Sequence := Point[]
 - Predicate := Set => Boolean
+- Type := Predicate, Predicate, Predicate...
+- Structure := (Set, Type)
 
 __TODO__
 
 I need to think just a little bit more about what are the primitives. I mean, I'm not even 100% sure I have it clear in my head what makes a good primitive set. The more keywords you have the more "domain knowledge" you need in your head but also your programs will be short. What is the sweet spot for a human programmer? What is the sweet spot for an LLM? Is there a difference?
+
+
+map, filter, reduce
+
+
+A Set starts out Unknown -> -> add predicates -> Workable (or whatever)
+
+type X =
+  predicate 1
+  predicate 2
+  predicate 3
+  predicate 4
+
+do
+
+
+
+end
+
+and
+  () end
+  () end
+  () end
+  () end
+  () end
+end
+
+
+---
+
+time language
+dsl language
+dialogue language
+state tree
+
+you have a language
+you have a program
+you have a history
+you have an engine
+
+
+def
+  options
+with
+  goal
+do
+  'do this thing'
+
+  'do that thing'
+
+  'do something else'
+end
+
+def
+  best_option
+filter
+  options
+do
+  succeeded?
+  quickly?
+end
+
+
+// with arc
+
+inputs -> outputs
+
+what is the rule?
+
+the rule is basically
+
+what properties do the inputs have?
+what language do the inputs speak?
+what properites do the outputs have?
+what language do the outputs speak?
+what is a description of the relationship between the two?
+what is a program written in
+
+type Coordinate = number;
+
+type Energy = number;
+
+type Dimension = number;
+
+type Time = number;
+
+type Datum = {
+  t: Time;
+  x: Coordinate;
+  y: Coordinate;
+  energy: Energy;
+}
+
+type Set := unordered
+type Sequence := ordered
+
+
+type Field = {
+  height: Dimension;
+  width: Dimension;
+  data: Set<Datum>;
+}
+
+
+
+
+
+field
+point := <grid, x, y, z>
+region := point[]
+coordinate := <grid, index>
+
+create
+  address a
+  height n
+  width n
+end
+
+read
+  address a
+  x n
+  y n
+end
+
+write
+  address a
+  x n
+  y n
+  energy e
+end
+
+def
+  name x
+  exp
+end
+
+func
+  (a: C b: C c: C) -> P
+do
+
+end
+
+for y in ys; do
+  for x in xs; do
+    
+  end
+end
+
+
+end
+
+
+
+
+
+
+
+cell
+  grid g
+  x num
+  y num
+  z num
+end
+
+grid
+   cells c[]
+end
+
+row
+  grid g
+  index num
+end
+
+column
+  grid g
+  index num
+end
+
+ray
+  grid g
+  origin c
+  direction d
+end
+
+box
+  grid g
+  origin c
+  height num
+  width num
+end
+
+set
+  grid g
+  filter g -> c[]
+end
+
+
+
+
+
+
+
+
 
 
