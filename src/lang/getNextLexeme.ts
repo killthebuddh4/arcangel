@@ -2,6 +2,7 @@ import { getCharacter } from "./getNextCharacter.js";
 import { createException } from "../lib/createException.js";
 import { Source } from "./Source.js";
 import { Lexeme } from "./Lexeme.js";
+import { isIdentifierCharacter } from "./isIdentifierCharacter.js";
 
 export const getNextLexeme = (args: {
   source: Source;
@@ -21,7 +22,7 @@ export const getNextLexeme = (args: {
 
   let current = args.start;
 
-  const createLexeme = (type: string, length: number): Lexeme => {
+  const createLexeme = (type: Lexeme["type"], length: number): Lexeme => {
     current = current + length;
 
     return {
@@ -84,6 +85,8 @@ export const getNextLexeme = (args: {
      * SINGLE CHARACTER TOKENS
      *
      * **********************************************************************/
+    case "@":
+      return createLexeme("@", 1);
     case "-":
       return createLexeme("MINUS", 1);
     case "+":
@@ -240,6 +243,576 @@ export const getNextLexeme = (args: {
           return createLexeme("NUMBER", length);
         }
       }
+    }
+    /* ***********************************************************************
+     *
+     * LITERALS
+     *
+     * **********************************************************************/
+    case "{": {
+      const length = 2;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "{}") {
+        return createLexeme("HASH", length);
+      } else {
+        throw createException({
+          code: "LEXER_UNEXPECTED_CHARACTER",
+          reason: `Expected "}" after "{" at index: ${current}`,
+        });
+      }
+    }
+    case "[": {
+      const length = 2;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "[]") {
+        return createLexeme("ARRAY", length);
+      } else {
+        throw createException({
+          code: "LEXER_UNEXPECTED_CHARACTER",
+          reason: `Expected "]" after "[" at index: ${current}`,
+        });
+      }
+    }
+    case "t": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "true") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("TRUE", length);
+        }
+      }
+      // NOTE THE FALLTHROUGH
+    }
+    case "f": {
+      const length = 5;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "false") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("FALSE", length);
+        }
+      }
+      // NOTE THE FALLTHROUGH
+    }
+    case "n": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "null") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("NULL", length);
+        }
+      }
+      // NOTE THE FALLTHROUGH
+    }
+    case "v": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "void") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("VOID", length);
+        }
+      }
+      // NOTE THE FALLTHROUGH
+    }
+    /* ***********************************************************************
+     *
+     * KEYWORDS
+     *
+     * **********************************************************************/
+    case "i": {
+      const length = 2;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "if") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("IF", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "t": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "then") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("THEN", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "e": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "else") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("ELSE", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "d": {
+      const length = 3;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "def") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("DEF", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "l": {
+      const length = 3;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "let") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("LET", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "d": {
+      const length = 2;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "do") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("DO", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "e": {
+      const length = 3;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "end") {
+        return createLexeme("END", length);
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "s": {
+      const length = 3;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "set") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("SET", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "g": {
+      const length = 3;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "get") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("GET", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "r": {
+      const length = 6;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "return") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("RETURN", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "f": {
+      const length = 3;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "for") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("FOR", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "m": {
+      const length = 3;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "map") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("MAP", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "f": {
+      const length = 6;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "filter") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("FILTER", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "r": {
+      const length = 6;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "reduce") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("REDUCE", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "f": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "find") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("FIND", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "s": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "some") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("SOME", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "e": {
+      const length = 5;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "every") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("EVERY", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "k": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "keys") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("KEYS", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "v": {
+      const length = 6;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "values") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("VALUES", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "s": {
+      const length = 6;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "switch") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("SWITCH", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
+    }
+    case "w": {
+      const length = 4;
+      const text = args.source.text.substring(current, current + length);
+
+      if (text === "when") {
+        const nextChar = getCharacter({
+          source: args.source,
+          // TODO is this correct? or should it be current + length?
+          index: current + length + 1,
+        });
+
+        if (
+          !isIdentifierCharacter({
+            char: nextChar,
+          })
+        ) {
+          return createLexeme("WHEN", length);
+        }
+      }
+
+      // NOTE THE FALLTHROUGH
     }
     /* ***********************************************************************
      *

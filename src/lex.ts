@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { getLexemes } from "./lang/getLexemes.js";
+import { lex } from "./lang/lex.js";
 
 const SOURCE_FILE = "./data/test.arc";
 
@@ -9,7 +9,7 @@ const main = async () => {
     const source = await readFile(SOURCE_FILE, "utf8");
 
     console.log("Lexing source...");
-    const lexemes = getLexemes({ source: { text: source } });
+    const lexemes = lex({ source: { text: source } });
 
     console.log("Lexemes:");
     console.log(JSON.stringify(lexemes, null, 2));

@@ -2,7 +2,7 @@ import { Source } from "./Source.js";
 import { getNextLexeme } from "./getNextLexeme.js";
 import { Lexeme } from "./Lexeme.js";
 
-export const getLexemes = (args: { source: Source }) => {
+export const lex = (args: { source: Source }) => {
   const STATE: { lexemes: Lexeme[]; current: number; line: number } = {
     lexemes: [],
     current: 0,

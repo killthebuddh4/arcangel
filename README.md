@@ -596,7 +596,7 @@ type Field = {
 
 Primitive Types
 
-- Undefined
+- Void
 - Null
 - Number
 - Boolean
@@ -631,13 +631,17 @@ end
 
 Function Definition
 
-(a: C: b: C c: C): P => exp
+fn
+  (a: C: b: C c: C): P
+  do
+
+  end
 
 Struct
 
-struct
-  id: String
-  name: String
+@struct
+  id => String
+  name => String
 end
 
 Type
@@ -674,6 +678,23 @@ return
   end
 end
 
+def x 10
+
+def
+  symbol x end
+  value 10 end
+end
+
+def x y + 10
+
+
+
+if
+  when x > 10 end
+  then x end
+  else null end
+end
+
 
 Keywords
 
@@ -698,10 +719,16 @@ Keywords
 read, write, def, () => {}, do, for, call, struct, map, array, return
 
 
-
 def x 5 end
 
 
+def
+  y
+
+  do
+    x + x
+  end
+end
 
 rows
   grid
@@ -716,3 +743,5 @@ call f
   b n
   c v
   
+
+
