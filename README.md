@@ -582,8 +582,8 @@ type Datum = {
 }
 
 type Set := unordered
-type Sequence := ordered
 
+type Sequence := ordered
 
 type Field = {
   height: Dimension;
@@ -594,102 +594,125 @@ type Field = {
 
 
 
+Primitive Types
 
-field
-point := <grid, x, y, z>
-region := point[]
-coordinate := <grid, index>
+- Undefined
+- Null
+- Number
+- Boolean
+- String
+- Map
+- Array
+- Struct
 
-create
-  address a
-  height n
-  width n
+Named Parameters
+
+kw
+  name exp
+  name exp
+  name exp
 end
 
-read
-  address a
-  x n
-  y n
-end
+Ordered Parameters
 
-write
-  address a
-  x n
-  y n
-  energy e
-end
-
-def
-  name x
+kw
+  exp
+  exp
   exp
 end
 
-func
-  (a: C b: C c: C) -> P
-do
+Function Call
 
+@name
+  name => exp
+  name => exp
+  name => exp
 end
 
-for y in ys; do
-  for x in xs; do
-    
+Function Definition
+
+(a: C: b: C c: C): P => exp
+
+Struct
+
+struct
+  id: String
+  name: String
+end
+
+Type
+
+...TODO...
+
+Map Literal
+
+{}
+
+Array Literal
+
+[]
+
+Numerical Operators
+
++, *, /, -,
+
+Boolean Operators
+
+&&, ||, !
+
+Comments
+
+"hash"
+
+Feedback, Commentary, Thoughts
+
+...TODO...
+
+return
+  do
+
   end
 end
 
 
+Keywords
+
+- {}
+- keys
+- []
+- ...
+- def
+- let (redef)
+- () => {}
+- @ (call)
+- do
+- if
+  - when
+  - then
+  - else
+- switch
+  - when
+  - then
+- return
+
+read, write, def, () => {}, do, for, call, struct, map, array, return
+
+
+
+def x 5 end
+
+
+
+rows
+  grid
 end
 
-
-
-
-
-
-
-cell
-  grid g
-  x num
-  y num
-  z num
+columns
+  grid
 end
 
-grid
-   cells c[]
-end
-
-row
-  grid g
-  index num
-end
-
-column
-  grid g
-  index num
-end
-
-ray
-  grid g
-  origin c
-  direction d
-end
-
-box
-  grid g
-  origin c
-  height num
-  width num
-end
-
-set
-  grid g
-  filter g -> c[]
-end
-
-
-
-
-
-
-
-
-
-
+call f
+  a n
+  b n
+  c v
+  

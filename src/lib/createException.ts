@@ -4,7 +4,12 @@ import { Exception } from "../types/Exception.js";
 export const createException = (args: {
   code: string;
   reason: string | Exception;
+  quiet?: boolean;
 }): Exception => {
+  if (!(args.quiet === false)) {
+    console.error(new Error().stack);
+  }
+
   return {
     type: "EXCEPTION",
     id: uuidv4(),

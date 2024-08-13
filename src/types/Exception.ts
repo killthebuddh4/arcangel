@@ -3,4 +3,5 @@ export type Exception = {
   id: string;
   code: string;
   reason: string | Exception;
+  error?: Error;
 };

@@ -6,7 +6,7 @@
     "dev": "npm run build && node --enable-source-maps build/arcangel.js",
     "anthropic": "npm run build && node --enable-source-maps build/anthropic.js",
     "results": "npm run build && node --enable-source-maps build/results.js",
-    "tp": "npm run build && node --enable-source-maps build/target-practice.js",
+    "lex": "npm run build && node --enable-source-maps build/lex.js",
     "start": "node build/arcangel.js",
     "lint": "eslint .",
     "format": "prettier --check .",
